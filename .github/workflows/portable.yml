@@ -237,4 +237,4 @@ jobs:
         run: |
           options=(--generate-notes --title "Bilidown $GITHUB_REF_NAME")
           [[ "$GITHUB_REF_NAME" == *-rc.* ]] && options+=(--prerelease)
-          gh release create "$GITHUB_REF_NAME" release-assets/*.zip release-assets/SHA256SUMS.txt release-assets/SIGNING_STATUS-*.txt "${options[@]}"
+          gh release create "$GITHUB_REF_NAME" release-assets/*.zip release-assets/SHA256SUMS.txt release-assets/SIGNING_STATUS-*.txt "${options[@]}" --repo "$GITHUB_REPOSITORY"
