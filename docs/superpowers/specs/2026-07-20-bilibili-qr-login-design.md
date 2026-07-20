@@ -45,12 +45,35 @@ Network and malformed-response failures return a typed user-facing error;
 expiration is a non-error state that enables “refresh QR code”. Polling is
 cancelled when the component unmounts, the user cancels, or login succeeds.
 
+## Login Result Compatibility
+
+The poll transport retains both the decoded JSON envelope and response cookies.
+On confirmation, Bilidown first imports allowlisted Bilibili cookies from the
+response `Set-Cookie` headers. If those headers do not contain `SESSDATA`, it
+falls back to the cross-domain URL in the JSON response without requesting or
+following that URL.
+
+The fallback accepts only HTTPS URLs with one of these exact shapes:
+
+- `passport.biligame.com/crossDomain`, used by Bilibili's cross-domain login;
+- `passport.bilibili.com` with the legacy account path already supported.
+
+Lookalike hosts, other Biligame paths, non-HTTPS URLs, missing `SESSDATA`, and
+non-allowlisted cookie names are rejected. Header cookies and URL parameters
+are merged by name with response cookies taking precedence. Errors never
+include the QR key, redirect query, or cookie values.
+
+The current web poll status mapping is `86101` for waiting to scan, `86090` for
+scanned and waiting for confirmation, and `86038` for expired.
+
 ## Verification
 
 - Unit tests mock Bilibili generate/poll responses, including pending, scanned,
   confirmed, expired, malformed, and network-error cases.
 - Tests verify only allowlisted cookie names enter the temporary session and
   that redirect URLs/cookie values never appear in errors or logs.
+- Compatibility tests cover response cookies, the exact Biligame cross-domain
+  URL, legacy fallback, merge precedence, and hostile URL variants.
 - Component tests verify polling, cancellation, expiration refresh, and the
   authenticated-state transition.
 - Run strict Python/TypeScript checks, the full test suites, and a Windows
