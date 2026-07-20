@@ -1,5 +1,7 @@
 # Bilidown 分级文档
 
+[简体中文](README.md) · [English](en/README.md)
+
 按你的当前目标选择层级，无需从头读完。
 
 ## Level 0：第一次下载
@@ -9,6 +11,7 @@
 ## Level 1：基本使用
 
 - [安装与基本使用](getting-started.md)：启动、输入视频、选择分 P、设置输出目录、查看任务。
+- [媒体支持矩阵](media-support.md)：yt-dlp 当前覆盖的 Bilibili 资源、弹幕与已知限制。
 - [安全与隐私](security-and-privacy.md)：本地监听、会话令牌、Cookie 生命周期和使用边界。
 
 ## Level 2：登录与格式
@@ -24,7 +27,7 @@
 
 - [架构说明](architecture.md)：前后端、任务队列、安全边界和下载流程。
 - [开发环境](development.md)：依赖、命令、测试和网络冒烟。
-- [构建与发布](building-and-releasing.md)：Windows/macOS 便携包、签名、公证、CI 和版本标签。
+- [构建与发布](building-and-releasing.md)：Windows/macOS 桌面安装包、签名、公证、CI 和版本标签。
 - [贡献指南](../CONTRIBUTING.md) · [Repository Guidelines](../AGENTS.md) · [安全政策](../SECURITY.md)
 
 文档中的 `<版本>`、`<owner>` 等尖括号文本是占位符，请替换为实际值，不要原样输入。

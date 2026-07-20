@@ -4,7 +4,8 @@
 
 - Python 3.12 或 3.13；CI 使用 3.13。
 - Node.js 22、pnpm 11.8.0。
-- FFmpeg/ffprobe；媒体集成测试和下载需要。
+- Rust stable（含 rustfmt/clippy）和平台对应的 Tauri 2 系统依赖。
+- FFmpeg/ffprobe；媒体集成测试、下载和桌面 sidecar 构建需要。
 
 ## 初始化
 
@@ -54,6 +55,9 @@ pnpm --dir frontend typecheck
 pnpm --dir frontend test
 pnpm --dir frontend build
 pnpm --dir frontend test:e2e
+cd src-tauri
+cargo fmt --all --check
+cargo clippy --all-targets -- -D warnings
 ```
 
 网络测试默认跳过。任意公开视频可设置 `BILIDOWN_SMOKE_URL`；固定样例测试设置 `BILIDOWN_KNOWN_NETWORK_SMOKE=1`。会员 4K 仅在受控本机额外设置 `BILIDOWN_SMOKE_BROWSER=firefox` 等有效登录来源，禁止向 CI 提交 Cookie。

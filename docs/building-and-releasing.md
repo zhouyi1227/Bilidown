@@ -1,15 +1,15 @@
 # 构建与发布
 
-PyInstaller 不是交叉编译器：Windows 包在 Windows 构建，两个 macOS 包分别在对应架构构建。版本同时存在于 `pyproject.toml` 和 `backend/bilidown/__init__.py`，发布前必须一致。
+PyInstaller 先生成单文件 Python sidecar，Tauri 再生成原生安装包。Windows 和 macOS 必须分别原生构建。版本同时存在于 `pyproject.toml`、Python 包、`src-tauri/Cargo.toml` 和 `src-tauri/tauri.conf.json`，发布前必须一致。
 
 ## Windows x64
 
 ```powershell
 packaging\prepare-ffmpeg.ps1
-packaging\build-portable.ps1 -Python .\.venv\Scripts\python.exe
+packaging\build-desktop.ps1 -Python .\.venv\Scripts\python.exe
 ```
 
-FFmpeg 脚本下载固定 BtbN LGPL 构建并校验 SHA-256。产物为 `dist/Bilidown-<版本>-windows-x64.zip` 及 `.sha256`。
+FFmpeg 脚本下载固定 BtbN LGPL 构建并校验 SHA-256。产物位于 `src-tauri/target/release/bundle/`，包括 NSIS `.exe` 和 MSI。
 
 ## macOS 原生包
 
@@ -17,16 +17,16 @@ FFmpeg 脚本下载固定 BtbN LGPL 构建并校验 SHA-256。产物为 `dist/Bi
 
 ```bash
 bash packaging/prepare-ffmpeg-macos.sh
-PYTHON=.venv/bin/python bash packaging/build-portable.sh
+PYTHON=.venv/bin/python bash packaging/build-desktop.sh
 ```
 
-FFmpeg 8.1.2 与 LAME 3.100 从固定源码和校验和构建，目标最低 macOS 13。正式产物为 `Bilidown-<版本>-macos-arm64.app.zip`。默认使用 ad-hoc 签名。
+FFmpeg 8.1.2 与 LAME 3.100 从固定源码和校验和构建，目标最低 macOS 13。Tauri 生成 `.app` 和 `.dmg`；默认使用 ad-hoc 签名。
 
 ## GitHub Actions
 
-`CI` 在 PR 和 main/master 推送上运行 pytest、TypeScript、Vitest、Vite 与 Playwright。`Portable builds` 可手动触发；未填写版本时使用 `dev-<短 SHA>`，两个便携包和第三方源码作为 artifacts 保留 14 天。
+`CI` 在 PR 和 main/master 推送上运行 pytest、严格 Python/TypeScript/Rust 检查、Vitest、Vite 与 Playwright。`Desktop builds` 可手动触发并在 Windows/macOS 构建原生安装包。
 
-推送与项目版本完全一致的 `vX.Y.Z` 标签创建正式 Release；`vX.Y.Z-rc.N` 仅在项目版本本身也是该预发布版本时创建 prerelease。Release 包含 Windows x64、macOS arm64 两个便携 ZIP、第三方源码包和 `SHA256SUMS.txt`。
+推送与项目版本完全一致的 `vX.Y.Z` 标签创建正式 Release；`vX.Y.Z-rc.N` 仅在项目版本本身也是该预发布版本时创建 prerelease。Release 包含 Windows x64 NSIS/MSI、macOS arm64 DMG、第三方源码包和 `SHA256SUMS.txt`。
 
 ## Apple 签名与公证
 
@@ -42,4 +42,4 @@ FFmpeg 8.1.2 与 LAME 3.100 从固定源码和校验和构建，目标最低 mac
 
 ## 发布前验收
 
-确认 CI 全绿、两个便携包均通过 `packaging/smoke-portable.py`、macOS 架构和最低版本正确、签名状态符合预期、许可证与源码归档齐全。真实 Bilibili/4K 测试在本机执行，不作为 Release 阻塞型 CI。
+确认 CI 全绿、Windows NSIS/MSI 与 macOS DMG 都已生成、sidecar 能随桌面壳启动、macOS 架构和最低版本正确、签名状态符合预期、许可证与源码归档齐全。真实 Bilibili/4K 测试在本机执行，不作为 Release 阻塞型 CI。

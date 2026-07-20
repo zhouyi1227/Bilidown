@@ -2,11 +2,11 @@
 
 ## 支持范围
 
-安全修复面向当前默认分支和最新 GitHub Release。旧便携包可能包含过期的 yt-dlp、Python 或 FFmpeg；发现问题后应先确认最新版是否仍可复现。
+安全修复面向当前默认分支和最新 GitHub Release。旧桌面安装包可能包含过期的 yt-dlp、Python 或 FFmpeg；发现问题后应先确认最新版是否仍可复现。
 
 ## 私密报告
 
-以下问题请勿先创建公开 Issue：Cookie/`SESSDATA` 泄漏、会话令牌绕过、任意文件读写、短链 SSRF、签名媒体 URL 泄漏、恶意文件名逃逸、便携构建供应链或签名问题。
+以下问题请勿先创建公开 Issue：Cookie/`SESSDATA` 泄漏、会话令牌绕过、任意文件读写、短链 SSRF、签名媒体 URL 泄漏、恶意文件名逃逸、桌面构建供应链或签名问题。
 
 优先使用仓库 **Security** 页面中的 **Report a vulnerability** 私密报告。若该功能未启用，请创建不含技术细节的普通 Issue，请求维护者提供私密联系方式；不要附 PoC、Cookie、账号资料或敏感日志。
 

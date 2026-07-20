@@ -1,3 +1,4 @@
+import json
 import re
 import tomllib
 from pathlib import Path
@@ -56,7 +57,15 @@ def test_agents_guide_has_required_title_and_length() -> None:
 
 def test_project_versions_match() -> None:
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    cargo = tomllib.loads(
+        (ROOT / "src-tauri" / "Cargo.toml").read_text(encoding="utf-8")
+    )
+    tauri = json.loads(
+        (ROOT / "src-tauri" / "tauri.conf.json").read_text(encoding="utf-8")
+    )
     assert project["project"]["version"] == bilidown.__version__
+    assert cargo["package"]["version"] == bilidown.__version__
+    assert tauri["version"] == bilidown.__version__
 
 
 def test_github_workflows_are_valid_yaml() -> None:

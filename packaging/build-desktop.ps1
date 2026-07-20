@@ -1,0 +1,31 @@
+param(
+    [string]$Python = "python"
+)
+
+$ErrorActionPreference = "Stop"
+$Root = Split-Path -Parent $PSScriptRoot
+$Ffmpeg = Join-Path $Root ".tools\ffmpeg\bin\ffmpeg.exe"
+$Ffprobe = Join-Path $Root ".tools\ffmpeg\bin\ffprobe.exe"
+
+if (-not (Test-Path -LiteralPath $Ffmpeg) -or -not (Test-Path -LiteralPath $Ffprobe)) {
+    throw "Run packaging\prepare-ffmpeg.ps1 before building."
+}
+
+Push-Location $Root
+try {
+    & $Python -m PyInstaller --version | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw "PyInstaller is unavailable. Install the .[dev] dependencies."
+    }
+    pnpm --dir frontend install --frozen-lockfile
+    if ($LASTEXITCODE -ne 0) {
+        throw "pnpm install failed with exit code $LASTEXITCODE"
+    }
+    pnpm --dir frontend desktop:build
+    if ($LASTEXITCODE -ne 0) {
+        throw "Tauri build failed with exit code $LASTEXITCODE"
+    }
+    Write-Host "Desktop bundles: src-tauri\target\release\bundle"
+} finally {
+    Pop-Location
+}

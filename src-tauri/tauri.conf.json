@@ -28,9 +28,16 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis", "dmg", "app"],
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.ico",
+      "icons/icon.icns"
+    ],
     "externalBin": ["binaries/bilidown-backend"],
-    "shortDescription": "Local Bilibili media downloader",
-    "longDescription": "Bilidown is a local-only desktop downloader for media you are authorized to save."
+    "shortDescription": "Local Bilibili media downloader and live recorder",
+    "longDescription": "Bilidown is a local-only desktop downloader and live recorder for media you are authorized to save."
   }
 }
