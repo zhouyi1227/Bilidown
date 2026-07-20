@@ -97,12 +97,12 @@ try {
 
     $entries = [System.IO.Compression.ZipFile]::OpenRead($archive).Entries.FullName
     $expectedEntries = @(
-        "$portableName\Bilidown.exe",
-        "$portableName\bilidown-backend.exe",
-        "$portableName\README.txt",
-        "$portableName\THIRD_PARTY_NOTICES.txt",
-        "$portableName\FFMPEG_SOURCE.txt",
-        "$portableName\SHA256SUMS.txt"
+        "$portableName/Bilidown.exe",
+        "$portableName/bilidown-backend.exe",
+        "$portableName/README.txt",
+        "$portableName/THIRD_PARTY_NOTICES.txt",
+        "$portableName/FFMPEG_SOURCE.txt",
+        "$portableName/SHA256SUMS.txt"
     )
     $missingEntries = $expectedEntries | Where-Object { $_ -notin $entries }
     if ($missingEntries) {

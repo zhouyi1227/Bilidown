@@ -24,7 +24,6 @@ tauri = { version = "2.11.5", features = ["image-png", "tray-icon"] }
 tauri-plugin-shell = "2.3.5"
 tauri-plugin-single-instance = "2.4.3"
 tokio = { version = "1.47.1", features = ["time"] }
-url = "2.5.7"
 uuid = { version = "1.18.1", features = ["v4"] }
 
 [lints.rust]

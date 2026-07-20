@@ -6,7 +6,7 @@ Bilidown 是 Tauri 2 桌面应用：Rust 管理窗口、托盘、单实例、空
 
 - `backend/bilidown/`：FastAPI、输入规范化、Cookie 会话、yt-dlp 引擎、任务队列、安全中间件和运行时发现。
 - `frontend/src/`：React + TypeScript 单页界面、API 客户端、登录状态、媒体选择和 SSE 任务进度。
-- `src-tauri/`：Rust 桌面壳、系统托盘、隐私登录窗口和 sidecar 生命周期。
+- `src-tauri/`：Rust 桌面壳、系统托盘和 sidecar 生命周期。
 - `packaging/`：PyInstaller 单文件 sidecar、FFmpeg 准备、Tauri Windows/macOS 构建与许可证。
 - `tests/` 与 `frontend/e2e/`：后端、媒体、文档、浏览器和显式网络测试。
 
@@ -14,7 +14,7 @@ Bilidown 是 Tauri 2 桌面应用：Rust 管理窗口、托盘、单实例、空
 
 1. 启动器选择本地端口和随机令牌，启动 Uvicorn 后打开浏览器。
 2. `/api/resources/resolve` 规范化可信 Bilibili URL，通过 yt-dlp 生成最多 100 项的结构化预览。
-3. 前端按精确格式 ID 与登录来源创建任务。
+3. 前端可向本地后端请求 Bilibili 二维码，轮询确认后创建仅存内存的 Cookie 会话，再按精确格式 ID 与登录来源创建任务。
 4. 单并发 `JobManager` 逐项下载并记录部分失败；`LiveJobManager` 为每场直播运行独立录制任务。
 5. FFmpeg 仅负责无重编码封装或明确选择的 MP3 转码，最终文件以防覆盖方式移动。
 

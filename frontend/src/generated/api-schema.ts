@@ -72,6 +72,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/qr-login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start Qr Login */
+        post: operations["start_qr_login_api_auth_qr_login_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/qr-login/poll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Poll Qr Login */
+        post: operations["poll_qr_login_api_auth_qr_login_poll_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/status": {
         parameters: {
             query?: never;
@@ -634,6 +668,33 @@ export interface components {
             /** Path */
             path: string;
         };
+        /** QrLoginPollRequest */
+        QrLoginPollRequest: {
+            /** Qr Key */
+            qr_key: string;
+        };
+        /** QrLoginPollResult */
+        QrLoginPollResult: {
+            /**
+             * Cookie Count
+             * @default 0
+             */
+            cookie_count: number;
+            /** Session Id */
+            session_id: string | null;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "pending" | "scanned" | "confirmed" | "expired";
+        };
+        /** QrLoginStart */
+        QrLoginStart: {
+            /** Image Data Uri */
+            image_data_uri: string;
+            /** Qr Key */
+            qr_key: string;
+        };
         /** QualityOption */
         QualityOption: {
             /** Audio Codec */
@@ -902,6 +963,59 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_qr_login_api_auth_qr_login_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QrLoginStart"];
+                };
+            };
+        };
+    };
+    poll_qr_login_api_auth_qr_login_poll_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QrLoginPollRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QrLoginPollResult"];
+                };
             };
             /** @description Validation Error */
             422: {

@@ -25,6 +25,8 @@ export type JobView = Schemas["JobView"];
 export type LiveJobView = Schemas["LiveJobView"];
 export type CreateLiveJobRequest = Schemas["CreateLiveJobRequest-Input"];
 export type CookieSessionResult = Schemas["CookieSessionResult"];
+export type QrLoginStart = Schemas["QrLoginStart"];
+export type QrLoginPollResult = Schemas["QrLoginPollResult"];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -146,6 +148,20 @@ export class ApiClient {
   async autoSelectAuth(): Promise<AutoAuthResult> {
     const client = await this.client;
     const { data, error, response } = await client.POST("/api/auth/auto");
+    return requireData(data, error, response);
+  }
+
+  async startQrLogin(): Promise<QrLoginStart> {
+    const client = await this.client;
+    const { data, error, response } = await client.POST("/api/auth/qr-login");
+    return requireData(data, error, response);
+  }
+
+  async pollQrLogin(qrKey: string): Promise<QrLoginPollResult> {
+    const client = await this.client;
+    const { data, error, response } = await client.POST("/api/auth/qr-login/poll", {
+      body: { qr_key: qrKey },
+    });
     return requireData(data, error, response);
   }
 

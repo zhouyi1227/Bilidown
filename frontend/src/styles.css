@@ -181,6 +181,11 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .file-button { padding: 10px 14px; border: 1px dashed #555d69; color: #e6e8eb; cursor: pointer; }
 .file-button input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .inline-message { margin: 14px 0 0; color: var(--cyan); font-size: 14px; }
+.qr-login-card { display: grid; grid-template-columns: 168px 1fr; gap: 20px; align-items: center; margin-top: 18px; padding: 16px; border: 1px solid rgba(251, 114, 153, 0.55); background: #101318; }
+.qr-login-image { display: block; width: 168px; height: 168px; padding: 8px; background: #fff; image-rendering: pixelated; }
+.qr-login-card p { margin: 0 0 8px; color: var(--muted); line-height: 1.6; }
+.qr-login-card strong { color: var(--cyan); font: 700 13px/1.5 var(--font-mono); }
+.qr-login-actions { display: flex; gap: 12px; align-items: center; margin-top: 16px; }
 
 .auth-status-card { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; margin-top: 18px; padding: 14px; border: 1px solid var(--line); background: #101318; }
 .auth-status-card strong { font: 700 13px/1.4 var(--font-mono); }
@@ -302,6 +307,7 @@ footer { display: flex; justify-content: space-between; gap: 30px; padding: 24px
   .video-preview { gap: 20px; }
   .auth-status-card { grid-template-columns: auto 1fr; }
   .auth-refresh { grid-column: 1 / -1; }
+  .qr-login-card { grid-template-columns: 1fr; }
   .page-option { grid-template-columns: auto 45px 1fr; }
   .page-duration { display: none; }
   .job-item { grid-template-columns: 1fr; }

@@ -6,9 +6,9 @@ import os
 import subprocess
 import sys
 from contextlib import asynccontextmanager
-from pathlib import Path
 from collections.abc import Callable
-from typing import AsyncGenerator
+from pathlib import Path
+from typing import AsyncGenerator, cast
 
 import yt_dlp.version
 from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
@@ -32,17 +32,21 @@ from .models import (
     AuthStatus,
     AuthStatusRequest,
     CreateJobRequest,
-    CookieSessionResult,
     CreateLiveJobRequest,
+    CookieSessionResult,
     JobStatus,
     JobView,
     LiveJobView,
     OpenOutputRequest,
+    QrLoginPollRequest,
+    QrLoginPollResult,
+    QrLoginStart,
     ResolveRequest,
     ResourceResolveRequest,
     ResolvedResource,
     ResolvedVideo,
 )
+from .qr_login import BilibiliQrLogin, QrLoginError
 from .runtime import ffmpeg_version, find_ffmpeg_binary, frontend_dist
 from .security import LocalSecurityMiddleware
 from .yt_adapter import DEFAULT_YT_ADAPTER
@@ -80,6 +84,7 @@ def create_app(
     live_jobs = LiveJobManager(
         LiveRecorder(cookies, DEFAULT_YT_ADAPTER, engine.base_options)
     )
+    qr_login = BilibiliQrLogin()
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
@@ -96,6 +101,7 @@ def create_app(
     app.state.engine = engine
     app.state.jobs = jobs
     app.state.live_jobs = live_jobs
+    app.state.qr_login = qr_login
     app.add_middleware(
         LocalSecurityMiddleware,
         token=session_token,
@@ -164,6 +170,28 @@ def create_app(
     @app.post("/api/auth/auto", response_model=AutoAuthResult)
     async def auto_auth() -> AutoAuthResult:
         return await asyncio.to_thread(engine.auto_auth)
+
+    @app.post("/api/auth/qr-login", response_model=QrLoginStart)
+    async def start_qr_login() -> QrLoginStart:
+        try:
+            login = cast(BilibiliQrLogin, app.state.qr_login)
+            started = await asyncio.to_thread(login.start)
+        except QrLoginError as exc:
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
+        return QrLoginStart(qr_key=started.qr_key, image_data_uri=started.image_data_uri)
+
+    @app.post("/api/auth/qr-login/poll", response_model=QrLoginPollResult)
+    async def poll_qr_login(request: QrLoginPollRequest) -> QrLoginPollResult:
+        try:
+            login = cast(BilibiliQrLogin, app.state.qr_login)
+            result = await asyncio.to_thread(login.poll, request.qr_key, cookies)
+        except (InvalidCookieFile, QrLoginError) as exc:
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
+        return QrLoginPollResult(
+            state=result.state,
+            session_id=result.session_id,
+            cookie_count=result.cookie_count,
+        )
 
     @app.post("/api/auth/cookie-sessions", response_model=CookieSessionResult)
     async def create_cookie_session(file: UploadFile = File(...)) -> CookieSessionResult:

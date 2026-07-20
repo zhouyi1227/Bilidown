@@ -5,7 +5,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ApiClient } from "../api";
 import { AuthPanel } from "./AuthPanel";
 
-const api = { uploadCookies: vi.fn() } as unknown as ApiClient;
+const api = {
+  uploadCookies: vi.fn(),
+  startQrLogin: vi.fn(),
+  pollQrLogin: vi.fn(),
+} as unknown as ApiClient;
 
 afterEach(cleanup);
 
@@ -64,5 +68,33 @@ describe("AuthPanel", () => {
     );
 
     expect(screen.getByText("Edge · 自动选择")).toBeInTheDocument();
+  });
+
+  it("starts local QR login without opening an embedded browser window", async () => {
+    vi.mocked(api.startQrLogin).mockResolvedValue({
+      qr_key: "a".repeat(32),
+      image_data_uri: "data:image/svg+xml;base64,PHN2Zy8+",
+    });
+    render(
+      <AuthPanel
+        api={api}
+        auth={{ kind: "guest" }}
+        authStatus={null}
+        checking={false}
+        checkError={null}
+        autoSelected={false}
+        onRefresh={vi.fn()}
+        onChange={vi.fn()}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "扫码登录 Bilibili" }));
+
+    expect(api.startQrLogin).toHaveBeenCalledOnce();
+    expect(screen.getByRole("img", { name: "Bilibili 登录二维码" })).toHaveAttribute(
+      "src",
+      "data:image/svg+xml;base64,PHN2Zy8+",
+    );
+    expect(screen.getByText("等待扫码…")).toBeInTheDocument();
   });
 });

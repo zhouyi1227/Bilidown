@@ -6,11 +6,6 @@ export interface BackendConnection {
   token: string;
 }
 
-export interface CookieImport {
-  content: string;
-  cookie_count: number;
-}
-
 export interface IdleWarning {
   minutes: number;
 }
@@ -24,18 +19,6 @@ export function getBackendConnection(browserToken: string): Promise<BackendConne
     return Promise.resolve({ base_url: "", token: browserToken });
   }
   return invoke<BackendConnection>("backend_connection");
-}
-
-export function openBilibiliLogin(): Promise<void> {
-  return invoke("open_bilibili_login");
-}
-
-export function collectBilibiliCookies(): Promise<CookieImport> {
-  return invoke<CookieImport>("collect_bilibili_cookies");
-}
-
-export function closeBilibiliLogin(): Promise<void> {
-  return invoke("close_bilibili_login");
 }
 
 export function markDesktopActivity(): Promise<void> {

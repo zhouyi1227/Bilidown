@@ -313,3 +313,18 @@ class OpenOutputRequest(ApiModel):
 class CookieSessionResult(ApiModel):
     session_id: str
     cookie_count: int
+
+
+class QrLoginStart(ApiModel):
+    qr_key: str = Field(min_length=16, max_length=128)
+    image_data_uri: str = Field(min_length=1, max_length=300_000)
+
+
+class QrLoginPollRequest(ApiModel):
+    qr_key: str = Field(min_length=16, max_length=128)
+
+
+class QrLoginPollResult(ApiModel):
+    state: Literal["pending", "scanned", "confirmed", "expired"]
+    session_id: str | None = None
+    cookie_count: int = 0

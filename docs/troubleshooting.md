@@ -23,7 +23,7 @@ ad-hoc 签名包未经过 Apple 公证时可能出现此提示。确认下载来
 
 ## 浏览器 Cookie 解密失败
 
-Chrome/Edge 的应用绑定加密可能使直接读取始终失败。请使用“一键登录 Bilibili”的独立隐私窗口；Firefox 或 Netscape `cookies.txt` 仅作为高级备选。macOS 首次读取 Firefox Cookie 时可能要求钥匙串授权，应核对请求程序后再允许。
+Chrome/Edge 的应用绑定加密可能使直接读取始终失败。请使用“扫码登录 Bilibili”；Firefox 或 Netscape `cookies.txt` 仅作为高级备选。macOS 首次读取 Firefox Cookie 时可能要求钥匙串授权，应核对请求程序后再允许。
 
 ## 已是大会员但没有 4K/高码率
 

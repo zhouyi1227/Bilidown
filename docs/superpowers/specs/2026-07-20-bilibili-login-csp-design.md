@@ -1,5 +1,9 @@
 # Bilibili Login WebView CSP Fix
 
+> Superseded by [the QR-login design](2026-07-20-bilibili-qr-login-design.md):
+> investigation showed that CSP does not govern the external WebView page, so
+> Bilidown replaces the unreliable embedded window instead of relaxing CSP.
+
 ## Context
 
 The native Bilibili login window opens but renders as an empty white page. The

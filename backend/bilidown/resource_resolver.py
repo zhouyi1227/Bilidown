@@ -52,7 +52,7 @@ class ResourceResolver:
         except CookieLoadError as exc:
             raise EngineError(
                 "cookie_decryption_failed",
-                "无法读取浏览器 Cookie，请使用应用内一键登录或 cookies.txt",
+                "无法读取浏览器 Cookie，请使用应用内扫码登录或 cookies.txt",
             ) from exc
         except (DownloadError, OSError) as exc:
             raise map_engine_error(logger.last_error or str(exc)) from exc

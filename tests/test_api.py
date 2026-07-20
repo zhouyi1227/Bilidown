@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 
 from bilidown.app import create_app
 from bilidown.models import AuthStatus, AutoAuthResult, BrowserAuth
+from bilidown.qr_login import QrLoginPollData, QrLoginStartData
 
 
 TOKEN = "test-token"
@@ -144,6 +145,37 @@ def test_auto_auth_endpoint_returns_selected_browser_without_cookie_data(tmp_pat
         },
     }
     assert "SESSDATA" not in response.text
+
+
+def test_qr_login_endpoints_create_a_temporary_cookie_session(tmp_path: Path) -> None:
+    app = create_app(session_token=TOKEN, expected_origin=ORIGIN, static_dir=tmp_path / "missing")
+    app.state.qr_login.start = lambda: QrLoginStartData(
+        qr_key="a" * 32,
+        image_data_uri="data:image/svg+xml;base64,PHN2Zy8+",
+    )
+    app.state.qr_login.poll = lambda _key, _cookies: QrLoginPollData(
+        state="confirmed",
+        session_id="temporary-session",
+        cookie_count=3,
+    )
+
+    with TestClient(app) as client:
+        started = client.post("/api/auth/qr-login", headers=HEADERS)
+        polled = client.post(
+            "/api/auth/qr-login/poll",
+            json={"qr_key": "a" * 32},
+            headers=HEADERS,
+        )
+
+    assert started.status_code == 200
+    assert started.json()["qr_key"] == "a" * 32
+    assert "data:image/svg+xml;base64," in started.json()["image_data_uri"]
+    assert polled.status_code == 200
+    assert polled.json() == {
+        "state": "confirmed",
+        "session_id": "temporary-session",
+        "cookie_count": 3,
+    }
 
 
 def test_quit_endpoint_is_protected_and_invokes_shutdown_callback(tmp_path: Path) -> None:

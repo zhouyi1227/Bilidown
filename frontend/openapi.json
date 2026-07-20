@@ -1003,6 +1003,80 @@
         "title": "OpenOutputRequest",
         "type": "object"
       },
+      "QrLoginPollRequest": {
+        "properties": {
+          "qr_key": {
+            "maxLength": 128,
+            "minLength": 16,
+            "title": "Qr Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "qr_key"
+        ],
+        "title": "QrLoginPollRequest",
+        "type": "object"
+      },
+      "QrLoginPollResult": {
+        "properties": {
+          "cookie_count": {
+            "default": 0,
+            "title": "Cookie Count",
+            "type": "integer"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "state": {
+            "enum": [
+              "pending",
+              "scanned",
+              "confirmed",
+              "expired"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "session_id",
+          "cookie_count"
+        ],
+        "title": "QrLoginPollResult",
+        "type": "object"
+      },
+      "QrLoginStart": {
+        "properties": {
+          "image_data_uri": {
+            "maxLength": 300000,
+            "minLength": 1,
+            "title": "Image Data Uri",
+            "type": "string"
+          },
+          "qr_key": {
+            "maxLength": 128,
+            "minLength": 16,
+            "title": "Qr Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "qr_key",
+          "image_data_uri"
+        ],
+        "title": "QrLoginStart",
+        "type": "object"
+      },
       "QualityOption": {
         "properties": {
           "audio_codec": {
@@ -1692,6 +1766,62 @@
           }
         },
         "summary": "Delete Cookie Session"
+      }
+    },
+    "/api/auth/qr-login": {
+      "post": {
+        "operationId": "start_qr_login_api_auth_qr_login_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QrLoginStart"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Start Qr Login"
+      }
+    },
+    "/api/auth/qr-login/poll": {
+      "post": {
+        "operationId": "poll_qr_login_api_auth_qr_login_poll_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QrLoginPollRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QrLoginPollResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Poll Qr Login"
       }
     },
     "/api/auth/status": {

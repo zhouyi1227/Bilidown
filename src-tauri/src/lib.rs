@@ -4,7 +4,6 @@
 mod backend;
 mod desktop;
 mod idle;
-mod login;
 
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -46,9 +45,6 @@ pub fn run() {
             idle::mark_activity,
             idle::set_active_jobs,
             idle::set_idle_timeout,
-            login::close_bilibili_login,
-            login::collect_bilibili_cookies,
-            login::open_bilibili_login,
         ])
         .run(tauri::generate_context!())
         .unwrap_or_else(|error| eprintln!("Bilidown desktop runtime failed: {error}"));
