@@ -48,6 +48,11 @@ def main() -> None:
     port = _configured_port()
     token = os.getenv("BILIDOWN_SESSION_TOKEN") or secrets.token_urlsafe(32)
     origin = f"http://127.0.0.1:{port}"
+    configured_origins = tuple(
+        value.strip()
+        for value in os.getenv("BILIDOWN_ADDITIONAL_ORIGINS", "").split(",")
+        if value.strip()
+    )
     server: uvicorn.Server
 
     def request_shutdown() -> None:
@@ -56,6 +61,7 @@ def main() -> None:
     app = create_app(
         session_token=token,
         expected_origin=origin,
+        additional_origins=configured_origins,
         shutdown_callback=request_shutdown,
     )
     if os.getenv("BILIDOWN_NO_BROWSER") != "1":

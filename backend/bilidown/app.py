@@ -60,6 +60,7 @@ def create_app(
     *,
     session_token: str,
     expected_origin: str,
+    additional_origins: tuple[str, ...] = (),
     static_dir: Path | None = None,
     shutdown_callback: Callable[[], None] | None = None,
 ) -> FastAPI:
@@ -83,7 +84,7 @@ def create_app(
     app.add_middleware(
         LocalSecurityMiddleware,
         token=session_token,
-        expected_origin=expected_origin,
+        expected_origins=(expected_origin, *additional_origins),
     )
 
     @app.get("/api/status", response_model=AppStatus)

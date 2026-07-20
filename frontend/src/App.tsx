@@ -1,4 +1,5 @@
 import { AppFooter, AppHeader, AppHero, ResolverPanel } from "./components/AppChrome";
+import { useTranslation } from "react-i18next";
 import { AuthPanel } from "./components/AuthPanel";
 import { DownloadPanel } from "./components/DownloadPanel";
 import { JobList } from "./components/JobList";
@@ -7,13 +8,14 @@ import { useAppController } from "./hooks/useAppController";
 
 export function App() {
   const controller = useAppController();
+  const { t } = useTranslation();
 
   if (!controller.hasSession) {
-    return <main className="fatal-state"><h1>本地会话已失效</h1><p>请关闭此页面并重新启动 Bilidown。</p></main>;
+    return <main className="fatal-state"><h1>{t("app.invalidSessionTitle")}</h1><p>{t("app.invalidSessionText")}</p></main>;
   }
 
   if (controller.shuttingDown) {
-    return <main className="fatal-state"><h1>Bilidown 已退出</h1><p>后台服务正在停止。现在可以关闭此页面。</p></main>;
+    return <main className="fatal-state"><h1>{t("app.shutdownTitle")}</h1><p>{t("app.shutdownText")}</p></main>;
   }
 
   return (
@@ -40,6 +42,11 @@ export function App() {
         onCredentialChange={controller.setCredential}
         onSubmit={(event) => void controller.handleResolve(event)}
       />
+      {controller.idleWarningMinutes !== null && (
+        <div className="warning-banner" role="status">
+          {t("app.idleWarning", { minutes: controller.idleWarningMinutes })}
+        </div>
+      )}
 
       {controller.video && (
         <VideoPreview

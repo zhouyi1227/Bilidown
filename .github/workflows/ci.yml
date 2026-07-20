@@ -57,3 +57,28 @@ jobs:
         run: pnpm --dir frontend exec playwright install --with-deps chromium
       - name: Run browser tests
         run: pnpm --dir frontend test:e2e
+
+  desktop:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-14]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - name: Create sidecar placeholder for compile checks
+        shell: bash
+        run: |
+          target="$(rustc -vV | sed -n 's/^host: //p')"
+          suffix=""
+          if [[ "$RUNNER_OS" == "Windows" ]]; then suffix=".exe"; fi
+          mkdir -p src-tauri/binaries
+          touch "src-tauri/binaries/bilidown-backend-${target}${suffix}"
+      - name: Check Rust formatting
+        working-directory: src-tauri
+        run: cargo fmt --all --check
+      - name: Run strict Rust lint
+        working-directory: src-tauri
+        run: cargo clippy --all-targets -- -D warnings

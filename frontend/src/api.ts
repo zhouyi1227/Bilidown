@@ -1,6 +1,8 @@
 import createClient, { type Middleware } from "openapi-fetch";
 
+import { getBackendConnection, isDesktopApp } from "./desktop";
 import type { components, paths } from "./generated/api-schema";
+import i18n from "./i18n";
 
 type Schemas = components["schemas"];
 
@@ -43,12 +45,12 @@ function requireData<T>(
   response: Response,
 ): T {
   if (data !== undefined) return data;
-  throw new Error(extractError(error, `请求失败 (${response.status})`));
+  throw new Error(extractError(error, i18n.t("errors.request", { status: response.status })));
 }
 
 function requireSuccess(error: unknown, response: Response): void {
   if (response.ok) return;
-  throw new Error(extractError(error, `请求失败 (${response.status})`));
+  throw new Error(extractError(error, i18n.t("errors.request", { status: response.status })));
 }
 
 const JOB_STATUSES = new Set<JobStatus>([
@@ -71,67 +73,77 @@ function parseJobView(value: unknown): JobView {
     || typeof value.created_at !== "string"
     || typeof value.updated_at !== "string"
   ) {
-    throw new Error("任务进度响应格式无效");
+    throw new Error(i18n.t("errors.invalidJob"));
   }
   return value as JobView;
 }
 
 export class ApiClient {
-  private readonly client: ReturnType<typeof createClient<paths>>;
+  private readonly connection: ReturnType<typeof getBackendConnection>;
+  private readonly client: Promise<ReturnType<typeof createClient<paths>>>;
 
-  constructor(private readonly token: string) {
-    this.client = createClient<paths>();
-    const tokenMiddleware: Middleware = {
-      onRequest: ({ request }) => {
-        request.headers.set("X-Bilidown-Token", token);
-        return request;
-      },
-    };
-    this.client.use(tokenMiddleware);
+  constructor(token: string) {
+    this.connection = getBackendConnection(token);
+    this.client = this.connection.then((connection) => {
+      const client = createClient<paths>({ baseUrl: connection.base_url });
+      const tokenMiddleware: Middleware = {
+        onRequest: ({ request }) => {
+          request.headers.set("X-Bilidown-Token", connection.token);
+          return request;
+        },
+      };
+      client.use(tokenMiddleware);
+      return client;
+    });
   }
 
   async getStatus(): Promise<AppStatus> {
-    const { data, error, response } = await this.client.GET("/api/status");
+    const client = await this.client;
+    const { data, error, response } = await client.GET("/api/status");
     return requireData(data, error, response);
   }
 
   async resolve(credential: string, auth: AuthConfig): Promise<ResolvedVideo> {
-    const { data, error, response } = await this.client.POST("/api/resolve", {
+    const client = await this.client;
+    const { data, error, response } = await client.POST("/api/resolve", {
       body: { credential, auth },
     });
     return requireData(data, error, response);
   }
 
   async checkAuth(auth: AuthConfig): Promise<AuthStatus> {
-    const { data, error, response } = await this.client.POST("/api/auth/status", {
+    const client = await this.client;
+    const { data, error, response } = await client.POST("/api/auth/status", {
       body: { auth },
     });
     return requireData(data, error, response);
   }
 
   async autoSelectAuth(): Promise<AutoAuthResult> {
-    const { data, error, response } = await this.client.POST("/api/auth/auto");
+    const client = await this.client;
+    const { data, error, response } = await client.POST("/api/auth/auto");
     return requireData(data, error, response);
   }
 
   async uploadCookies(file: File): Promise<CookieSessionResult> {
+    const connection = await this.connection;
     const body = new FormData();
     body.set("file", file);
-    const response = await fetch("/api/auth/cookie-sessions", {
+    const response = await fetch(`${connection.base_url}/api/auth/cookie-sessions`, {
       method: "POST",
-      headers: { "X-Bilidown-Token": this.token },
+      headers: { "X-Bilidown-Token": connection.token },
       body,
     });
     const payload: unknown = await response.json().catch(() => null);
     if (!response.ok) {
-      throw new Error(extractError(payload, `请求失败 (${response.status})`));
+      throw new Error(extractError(payload, i18n.t("errors.request", { status: response.status })));
     }
     if (
       !isRecord(payload)
       || typeof payload.session_id !== "string"
       || typeof payload.cookie_count !== "number"
     ) {
-      throw new Error("Cookie 会话响应格式无效");
+      throw new Error(i18n.t("errors.invalidCookieSession"));
     }
     return {
       session_id: payload.session_id,
@@ -140,7 +152,8 @@ export class ApiClient {
   }
 
   async deleteCookieSession(sessionId: string): Promise<void> {
-    const { error, response } = await this.client.DELETE(
+    const client = await this.client;
+    const { error, response } = await client.DELETE(
       "/api/auth/cookie-sessions/{session_id}",
       { params: { path: { session_id: sessionId } } },
     );
@@ -148,19 +161,22 @@ export class ApiClient {
   }
 
   async listJobs(): Promise<JobView[]> {
-    const { data, error, response } = await this.client.GET("/api/jobs");
+    const client = await this.client;
+    const { data, error, response } = await client.GET("/api/jobs");
     return requireData(data, error, response);
   }
 
   async createJob(request: CreateJobRequest): Promise<JobView> {
-    const { data, error, response } = await this.client.POST("/api/jobs", {
+    const client = await this.client;
+    const { data, error, response } = await client.POST("/api/jobs", {
       body: request,
     });
     return requireData(data, error, response);
   }
 
   async cancelJob(jobId: string): Promise<JobView> {
-    const { data, error, response } = await this.client.POST(
+    const client = await this.client;
+    const { data, error, response } = await client.POST(
       "/api/jobs/{job_id}/cancel",
       { params: { path: { job_id: jobId } } },
     );
@@ -168,7 +184,8 @@ export class ApiClient {
   }
 
   async retryJob(jobId: string): Promise<JobView> {
-    const { data, error, response } = await this.client.POST(
+    const client = await this.client;
+    const { data, error, response } = await client.POST(
       "/api/jobs/{job_id}/retry",
       { params: { path: { job_id: jobId } } },
     );
@@ -176,22 +193,25 @@ export class ApiClient {
   }
 
   async openOutput(path: string): Promise<void> {
-    const { error, response } = await this.client.POST("/api/open-output", {
+    const client = await this.client;
+    const { error, response } = await client.POST("/api/open-output", {
       body: { path },
     });
     requireSuccess(error, response);
   }
 
   async quit(): Promise<void> {
-    const { error, response } = await this.client.POST("/api/quit");
+    const client = await this.client;
+    const { error, response } = await client.POST("/api/quit");
     requireSuccess(error, response);
   }
 
   async streamJob(jobId: string, onUpdate: (job: JobView) => void): Promise<void> {
-    const response = await fetch(`/api/jobs/${encodeURIComponent(jobId)}/events`, {
-      headers: { "X-Bilidown-Token": this.token },
+    const connection = await this.connection;
+    const response = await fetch(`${connection.base_url}/api/jobs/${encodeURIComponent(jobId)}/events`, {
+      headers: { "X-Bilidown-Token": connection.token },
     });
-    if (!response.ok || !response.body) throw new Error("无法订阅任务进度");
+    if (!response.ok || !response.body) throw new Error(i18n.t("errors.subscribe"));
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
@@ -213,6 +233,7 @@ export class ApiClient {
 }
 
 export function readSessionToken(): string {
+  if (isDesktopApp()) return "desktop-session";
   const url = new URL(window.location.href);
   const fromUrl = url.searchParams.get("token");
   if (fromUrl) {

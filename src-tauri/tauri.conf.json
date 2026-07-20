@@ -1,0 +1,36 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Bilidown",
+  "version": "0.1.1",
+  "identifier": "io.github.arsvinezhu.bilidown",
+  "build": {
+    "beforeDevCommand": "pnpm --dir frontend dev",
+    "devUrl": "http://127.0.0.1:5173",
+    "beforeBuildCommand": "pnpm --dir frontend build && node packaging/build-sidecar.mjs",
+    "frontendDist": "../frontend/dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Bilidown",
+        "width": 1240,
+        "height": 860,
+        "minWidth": 760,
+        "minHeight": 620,
+        "center": true,
+        "visible": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.hdslb.com https://*.bilibili.com; connect-src 'self' http://127.0.0.1:*; font-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "dmg", "app"],
+    "externalBin": ["binaries/bilidown-backend"],
+    "shortDescription": "Local Bilibili media downloader",
+    "longDescription": "Bilidown is a local-only desktop downloader for media you are authorized to save."
+  }
+}

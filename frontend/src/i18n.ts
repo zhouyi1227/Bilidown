@@ -1,0 +1,225 @@
+import i18n from "i18next";
+import { initReactI18next } from "react-i18next";
+
+export const SUPPORTED_LANGUAGES = ["zh-CN", "en-US"] as const;
+export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
+
+const resources = {
+  "zh-CN": {
+    translation: {
+      app: {
+        invalidSessionTitle: "本地会话已失效",
+        invalidSessionText: "请关闭此页面并重新启动 Bilidown。",
+        shutdownTitle: "Bilidown 已退出",
+        shutdownText: "后台服务正在停止。现在可以关闭此页面。",
+        idleWarning: "长时间没有操作，Bilidown 将在 {{minutes}} 分钟后自动退出。进行任意操作即可继续使用。",
+      },
+      header: {
+        localOnly: "仅监听 127.0.0.1",
+        quit: "退出 Bilidown",
+        language: "语言",
+      },
+      hero: {
+        line1: "把你有权保存的内容，",
+        line2: "留在本机。",
+        description: "输入 Bilibili 媒体链接、BV 号、AV 号或 b23.tv 短链。登录态、解析过程和下载记录不会发送给第三方。",
+      },
+      resolver: {
+        eyebrow: "媒体定位",
+        title: "粘贴凭据并解析",
+        label: "Bilibili 媒体链接、BV 号或 AV 号",
+        placeholder: "BV1xx411c7mD 或 https://www.bilibili.com/...",
+        resolving: "解析中…",
+        submit: "解析媒体",
+      },
+      footer: {
+        legal: "Bilidown 不绕过权限。请遵守 Bilibili 条款及适用版权法律。",
+        missing: "未安装",
+      },
+      auth: {
+        eyebrow: "登录权限",
+        title: "选择登录来源",
+        private: "仅本机处理",
+        sourceGroup: "登录来源",
+        guest: "游客",
+        profile: "浏览器 Profile（可选）",
+        profilePlaceholder: "留空使用最近访问的 Profile",
+        oneClick: "一键登录 Bilibili",
+        import: "导入登录态",
+        importing: "正在导入…",
+        loadFile: "载入 cookies.txt",
+        loading: "正在读取…",
+        sessionEnabled: "临时登录态已启用，退出软件后自动清除",
+        browserWarning: "浏览器直读可能受加密限制；也可使用 Netscape Cookie 文件",
+        loginPrompt: "请在新窗口完成 Bilibili 登录，然后点击“导入登录态”。",
+        loginOpenError: "无法打开 Bilibili 登录窗口",
+        loginCloseError: "无法关闭 Bilibili 登录窗口",
+        cancelLogin: "取消登录",
+        importError: "无法导入 Bilibili 登录态",
+        loaded: "已载入 {{count}} 条 Bilibili Cookie，本次运行有效。",
+        fileError: "Cookie 文件读取失败",
+        checking: "正在检查登录状态…",
+        activeUser: "已登录账号",
+        vip: "大会员",
+        regular: "普通账号",
+        inactive: "未检测到有效登录态",
+        guestStatus: "未使用账号权限",
+        auto: "自动选择",
+        refresh: "重新检查",
+      },
+      video: {
+        unknownDuration: "时长未知",
+        coverAlt: "{{title}} 封面",
+        resolved: "解析完成",
+        unknownUploader: "未知 UP 主",
+        selectPages: "选择分 P",
+        selectAll: "选择全部",
+        clearAll: "取消全选",
+      },
+      download: {
+        eyebrow: "下载配置",
+        title: "选择要保存的内容",
+        ffmpegReady: "FFmpeg 就绪",
+        ffmpegMissing: "缺少 FFmpeg",
+        cover: "原始封面",
+        coverDescription: "保存 Bilibili 返回的原始图片，不放大、不压缩。",
+        downloadCover: "下载封面",
+        audio: "音频",
+        outputFormat: "输出格式",
+        audioM4a: "AAC / M4A 源流",
+        audioBest: "最佳源流（FLAC / Dolby / AAC）",
+        audioMp3: "MP3 VBR V2",
+        downloadAudio: "下载 {{count}} P 音频",
+        video: "视频",
+        outputMode: "输出模式",
+        compatible: "兼容 MP4（H.264 + AAC）",
+        source: "原始质量（MP4 / MKV）",
+        commonFormat: "共同可用格式",
+        noFormat: "无共同可用格式",
+        selectPageFirst: "请先选择分 P",
+        bestSourceAudio: "最佳源音频",
+        downloadVideo: "下载 {{count}} P 视频",
+        outputDirectory: "输出目录",
+        openDirectory: "打开目录",
+      },
+      jobs: {
+        eyebrow: "本次运行",
+        title: "任务队列",
+        count: "{{count}} 个任务",
+        empty: "创建下载任务后，进度会显示在这里。",
+        queued: "排队中",
+        running: "进行中",
+        completed: "已完成",
+        failed: "失败",
+        cancelled: "已取消",
+        cover: "原始封面",
+        audio: "音频",
+        video: "视频",
+        qualityVideo: "{{height}}P 视频",
+        waitingSpeed: "等待速度",
+        showError: "查看错误",
+        cancel: "取消",
+        retry: "重试",
+      },
+      errors: {
+        stream: "任务进度连接中断",
+        initialization: "应用初始化失败",
+        authCheck: "登录状态检查失败",
+        resolve: "媒体解析失败",
+        create: "无法创建下载任务",
+        cancel: "取消任务失败",
+        retry: "重试任务失败",
+        quit: "无法退出 Bilidown",
+        openDirectory: "无法打开目录",
+        activeQuit: "仍有 {{count}} 个任务未完成。退出会取消任务并清理临时文件，是否继续？",
+        request: "请求失败 ({{status}})",
+        invalidJob: "任务进度响应格式无效",
+        invalidCookieSession: "Cookie 会话响应格式无效",
+        subscribe: "无法订阅任务进度",
+      },
+    },
+  },
+  "en-US": {
+    translation: {
+      app: {
+        invalidSessionTitle: "Local session expired",
+        invalidSessionText: "Close this page and start Bilidown again.",
+        shutdownTitle: "Bilidown has exited",
+        shutdownText: "The backend is stopping. You can close this page.",
+        idleWarning: "Bilidown has been idle and will exit in {{minutes}} minutes. Interact with the app to keep it running.",
+      },
+      header: { localOnly: "Listening only on 127.0.0.1", quit: "Quit Bilidown", language: "Language" },
+      hero: {
+        line1: "Keep the media you may save",
+        line2: "on your own device.",
+        description: "Enter a Bilibili media URL, BV/AV ID, or b23.tv short link. Login data, parsing, and download history stay local.",
+      },
+      resolver: {
+        eyebrow: "Media source", title: "Paste and inspect", label: "Bilibili media URL, BV ID, or AV ID",
+        placeholder: "BV1xx411c7mD or https://www.bilibili.com/...", resolving: "Resolving…", submit: "Resolve media",
+      },
+      footer: { legal: "Bilidown does not bypass access controls. Follow Bilibili terms and applicable copyright law.", missing: "not installed" },
+      auth: {
+        eyebrow: "Access", title: "Choose a login source", private: "Processed locally", sourceGroup: "Login source", guest: "Guest",
+        profile: "Browser profile (optional)", profilePlaceholder: "Leave blank to use the most recent profile",
+        oneClick: "Sign in to Bilibili", import: "Import login", importing: "Importing…", loadFile: "Load cookies.txt", loading: "Reading…",
+        sessionEnabled: "Temporary login enabled; it is cleared when Bilidown exits",
+        browserWarning: "Direct browser access may be blocked by encryption; Netscape cookie files are also supported",
+        loginPrompt: "Finish signing in in the new window, then click “Import login”.",
+        loginOpenError: "Could not open the Bilibili login window", importError: "Could not import the Bilibili login",
+        loginCloseError: "Could not close the Bilibili login window", cancelLogin: "Cancel login",
+        loaded: "Loaded {{count}} Bilibili cookies for this run.", fileError: "Could not read the cookie file",
+        checking: "Checking login…", activeUser: "Signed-in account", vip: "Premium", regular: "Standard account",
+        inactive: "No valid login was detected", guestStatus: "No account permissions", auto: "auto-selected", refresh: "Check again",
+      },
+      video: {
+        unknownDuration: "Unknown duration", coverAlt: "{{title}} cover", resolved: "Resolved", unknownUploader: "Unknown uploader",
+        selectPages: "Select parts", selectAll: "Select all", clearAll: "Clear selection",
+      },
+      download: {
+        eyebrow: "Download settings", title: "Choose what to save", ffmpegReady: "FFmpeg ready", ffmpegMissing: "FFmpeg missing",
+        cover: "Original cover", coverDescription: "Save the original image returned by Bilibili without rescaling or recompression.",
+        downloadCover: "Download cover", audio: "Audio", outputFormat: "Output format", audioM4a: "AAC / M4A source",
+        audioBest: "Best source (FLAC / Dolby / AAC)", audioMp3: "MP3 VBR V2", downloadAudio: "Download audio for {{count}} part(s)",
+        video: "Video", outputMode: "Output mode", compatible: "Compatible MP4 (H.264 + AAC)", source: "Source quality (MP4 / MKV)",
+        commonFormat: "Formats available to all", noFormat: "No common format", selectPageFirst: "Select at least one part",
+        bestSourceAudio: "best source audio",
+        downloadVideo: "Download video for {{count}} part(s)", outputDirectory: "Output directory", openDirectory: "Open folder",
+      },
+      jobs: {
+        eyebrow: "This run", title: "Job queue", count: "{{count}} job(s)", empty: "Download progress will appear here.",
+        queued: "Queued", running: "Running", completed: "Completed", failed: "Failed", cancelled: "Cancelled",
+        cover: "Original cover", audio: "Audio", video: "Video", qualityVideo: "{{height}}P video",
+        waitingSpeed: "Waiting for speed", showError: "Show error", cancel: "Cancel", retry: "Retry",
+      },
+      errors: {
+        stream: "Job progress connection was interrupted", initialization: "Application initialization failed",
+        authCheck: "Login status check failed", resolve: "Media resolution failed", create: "Could not create the download job",
+        cancel: "Could not cancel the job", retry: "Could not retry the job", quit: "Could not quit Bilidown",
+        openDirectory: "Could not open the folder",
+        activeQuit: "{{count}} job(s) are still active. Quitting cancels them and removes temporary files. Continue?",
+        request: "Request failed ({{status}})", invalidJob: "Invalid job progress response",
+        invalidCookieSession: "Invalid cookie-session response", subscribe: "Could not subscribe to job progress",
+      },
+    },
+  },
+} as const;
+
+const storedLanguage = localStorage.getItem("bilidown-language");
+const initialLanguage: SupportedLanguage = storedLanguage === "en-US" ? "en-US" : "zh-CN";
+
+void i18n.use(initReactI18next).init({
+  resources,
+  lng: initialLanguage,
+  fallbackLng: "zh-CN",
+  interpolation: { escapeValue: false },
+});
+
+i18n.on("languageChanged", (language) => {
+  localStorage.setItem("bilidown-language", language);
+  document.documentElement.lang = language;
+});
+
+document.documentElement.lang = initialLanguage;
+
+export default i18n;

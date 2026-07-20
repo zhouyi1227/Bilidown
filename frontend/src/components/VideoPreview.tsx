@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 import type { ResolvedVideo } from "../api";
 
 interface VideoPreviewProps {
@@ -6,8 +8,8 @@ interface VideoPreviewProps {
   onSelectedPagesChange: (pages: Set<number>) => void;
 }
 
-function formatDuration(seconds: number | null): string {
-  if (!seconds) return "时长未知";
+function formatDuration(seconds: number | null, unknownLabel: string): string {
+  if (!seconds) return unknownLabel;
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   const remaining = Math.floor(seconds % 60);
@@ -18,6 +20,7 @@ function formatDuration(seconds: number | null): string {
 }
 
 export function VideoPreview({ video, selectedPages, onSelectedPagesChange }: VideoPreviewProps) {
+  const { t } = useTranslation();
   function togglePage(index: number) {
     const next = new Set(selectedPages);
     if (next.has(index)) next.delete(index);
@@ -30,21 +33,21 @@ export function VideoPreview({ video, selectedPages, onSelectedPagesChange }: Vi
   return (
     <section className="panel video-preview" aria-labelledby="video-heading">
       <div className="cover-frame">
-        {video.thumbnail ? <img src={video.thumbnail} alt={`${video.title} 封面`} /> : <div className="cover-placeholder">NO COVER</div>}
+        {video.thumbnail ? <img src={video.thumbnail} alt={t("video.coverAlt", { title: video.title })} /> : <div className="cover-placeholder">NO COVER</div>}
       </div>
       <div className="video-details">
-        <p className="eyebrow">解析完成 · {video.bvid}</p>
+        <p className="eyebrow">{t("video.resolved")} · {video.bvid}</p>
         <h2 id="video-heading">{video.title}</h2>
-        <p className="video-meta">{video.uploader ?? "未知 UP 主"} · {formatDuration(video.duration)} · {video.pages.length} P</p>
+        <p className="video-meta">{video.uploader ?? t("video.unknownUploader")} · {formatDuration(video.duration, t("video.unknownDuration"))} · {video.pages.length} P</p>
 
         <div className="page-toolbar">
-          <h3>选择分 P</h3>
+          <h3>{t("video.selectPages")}</h3>
           <button
             type="button"
             className="text-button"
             onClick={() => onSelectedPagesChange(allSelected ? new Set() : new Set(video.pages.map((page) => page.index)))}
           >
-            {allSelected ? "取消全选" : "选择全部"}
+            {allSelected ? t("video.clearAll") : t("video.selectAll")}
           </button>
         </div>
         <div className="page-list">
@@ -53,7 +56,7 @@ export function VideoPreview({ video, selectedPages, onSelectedPagesChange }: Vi
               <input type="checkbox" checked={selectedPages.has(page.index)} onChange={() => togglePage(page.index)} />
               <span className="page-number">P{String(page.index).padStart(2, "0")}</span>
               <span className="page-title">{page.title}</span>
-              <span className="page-duration">{formatDuration(page.duration)}</span>
+              <span className="page-duration">{formatDuration(page.duration, t("video.unknownDuration"))}</span>
             </label>
           ))}
         </div>
@@ -61,4 +64,3 @@ export function VideoPreview({ video, selectedPages, onSelectedPagesChange }: Vi
     </section>
   );
 }
-

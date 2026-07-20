@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 import type { JobView } from "../api";
 
 interface JobListProps {
@@ -5,14 +7,6 @@ interface JobListProps {
   onCancel: (jobId: string) => void;
   onRetry: (jobId: string) => void;
 }
-
-const STATUS_LABELS: Record<JobView["status"], string> = {
-  queued: "排队中",
-  running: "进行中",
-  completed: "已完成",
-  failed: "失败",
-  cancelled: "已取消",
-};
 
 function formatBytes(value: number | null): string {
   if (!value) return "—";
@@ -27,33 +21,41 @@ function formatBytes(value: number | null): string {
 }
 
 export function JobList({ jobs, onCancel, onRetry }: JobListProps) {
+  const { t } = useTranslation();
+  const statusLabels: Record<JobView["status"], string> = {
+    queued: t("jobs.queued"),
+    running: t("jobs.running"),
+    completed: t("jobs.completed"),
+    failed: t("jobs.failed"),
+    cancelled: t("jobs.cancelled"),
+  };
   return (
     <section className="panel jobs-panel" aria-labelledby="jobs-heading">
       <div className="section-heading">
         <div>
-          <p className="eyebrow">本次运行</p>
-          <h2 id="jobs-heading">任务队列</h2>
+          <p className="eyebrow">{t("jobs.eyebrow")}</p>
+          <h2 id="jobs-heading">{t("jobs.title")}</h2>
         </div>
-        <span>{jobs.length} 个任务</span>
+        <span>{t("jobs.count", { count: jobs.length })}</span>
       </div>
 
       {jobs.length === 0 ? (
-        <div className="empty-state">创建下载任务后，进度会显示在这里。</div>
+        <div className="empty-state">{t("jobs.empty")}</div>
       ) : (
         <div className="job-list">
           {jobs.map((job) => (
             <article className="job-item" key={job.id}>
               <div className="job-main">
-                <span className={`job-status ${job.status}`}>{STATUS_LABELS[job.status]}</span>
+                <span className={`job-status ${job.status}`}>{statusLabels[job.status]}</span>
                 <div>
                   <h3>
                     {job.request.media_kind === "cover"
-                      ? "原始封面"
+                      ? t("jobs.cover")
                       : job.request.media_kind === "audio"
-                        ? "音频"
+                        ? t("jobs.audio")
                         : job.request.quality_height
-                          ? `${job.request.quality_height}P 视频`
-                          : "视频"}
+                          ? t("jobs.qualityVideo", { height: job.request.quality_height })
+                          : t("jobs.video")}
                   </h3>
                   <p>{job.progress.phase}{job.progress.current_page ? ` · P${job.progress.current_page}` : ""}</p>
                 </div>
@@ -62,16 +64,16 @@ export function JobList({ jobs, onCancel, onRetry }: JobListProps) {
               <div className="job-metrics">
                 <span>{job.progress.percent?.toFixed(1) ?? "0.0"}%</span>
                 <span>{formatBytes(job.progress.downloaded_bytes)} / {formatBytes(job.progress.total_bytes)}</span>
-                <span>{job.progress.speed ? `${formatBytes(job.progress.speed)}/s` : "等待速度"}</span>
+                <span>{job.progress.speed ? `${formatBytes(job.progress.speed)}/s` : t("jobs.waitingSpeed")}</span>
               </div>
-              {job.error_message && <details className="job-error"><summary>查看错误</summary><p>{job.error_message}</p></details>}
+              {job.error_message && <details className="job-error"><summary>{t("jobs.showError")}</summary><p>{job.error_message}</p></details>}
               {job.result_paths.length > 0 && <p className="result-path">{job.result_paths.join("\n")}</p>}
               <div className="job-actions">
                 {(job.status === "queued" || job.status === "running") && (
-                  <button type="button" className="danger-button" onClick={() => onCancel(job.id)}>取消</button>
+                  <button type="button" className="danger-button" onClick={() => onCancel(job.id)}>{t("jobs.cancel")}</button>
                 )}
                 {(job.status === "failed" || job.status === "cancelled") && (
-                  <button type="button" className="secondary-button" onClick={() => onRetry(job.id)}>重试</button>
+                  <button type="button" className="secondary-button" onClick={() => onRetry(job.id)}>{t("jobs.retry")}</button>
                 )}
               </div>
             </article>

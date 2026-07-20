@@ -12,6 +12,9 @@ import type {
   QualityOption,
   ResolvedVideo,
 } from "../api";
+import { isDesktopApp, quitDesktopApp } from "../desktop";
+import i18n from "../i18n";
+import { useDesktopLifecycle } from "./useDesktopLifecycle";
 
 const sessionToken = readSessionToken();
 const api = new ApiClient(sessionToken);
@@ -53,7 +56,7 @@ export function useAppController() {
     void api
       .streamJob(job.id, (updated) => setJobs((current) => updateJobList(current, updated)))
       .catch((streamError: unknown) => {
-        setError(streamError instanceof Error ? streamError.message : "任务进度连接中断");
+        setError(streamError instanceof Error ? streamError.message : i18n.t("errors.stream"));
       })
       .finally(() => watchedJobs.current.delete(job.id));
   }, []);
@@ -81,7 +84,7 @@ export function useAppController() {
       })
       .catch((loadError: unknown) => {
         if (!controller.signal.aborted) {
-          setError(loadError instanceof Error ? loadError.message : "应用初始化失败");
+          setError(loadError instanceof Error ? loadError.message : i18n.t("errors.initialization"));
         }
       })
       .finally(() => {
@@ -112,7 +115,7 @@ export function useAppController() {
           .catch((checkError: unknown) => {
             if (!cancelled) {
               setAuthStatus(null);
-              setAuthCheckError(checkError instanceof Error ? checkError.message : "登录状态检查失败");
+              setAuthCheckError(checkError instanceof Error ? checkError.message : i18n.t("errors.authCheck"));
             }
           })
           .finally(() => {
@@ -167,7 +170,7 @@ export function useAppController() {
       setCredential(resolved.canonical_url);
       setSelectedPages(new Set([resolved.selected_page]));
     } catch (resolveError) {
-      setError(resolveError instanceof Error ? resolveError.message : "视频解析失败");
+      setError(resolveError instanceof Error ? resolveError.message : i18n.t("errors.resolve"));
     } finally {
       setResolving(false);
     }
@@ -194,7 +197,7 @@ export function useAppController() {
       setJobs((current) => updateJobList(current, job));
       watchJob(job);
     } catch (createError) {
-      setError(createError instanceof Error ? createError.message : "无法创建下载任务");
+      setError(createError instanceof Error ? createError.message : i18n.t("errors.create"));
     } finally {
       setCreating(false);
     }
@@ -205,7 +208,7 @@ export function useAppController() {
       const job = await api.cancelJob(jobId);
       setJobs((current) => updateJobList(current, job));
     } catch (cancelError) {
-      setError(cancelError instanceof Error ? cancelError.message : "取消任务失败");
+      setError(cancelError instanceof Error ? cancelError.message : i18n.t("errors.cancel"));
     }
   }
 
@@ -215,7 +218,7 @@ export function useAppController() {
       setJobs((current) => updateJobList(current, job));
       watchJob(job);
     } catch (retryError) {
-      setError(retryError instanceof Error ? retryError.message : "重试任务失败");
+      setError(retryError instanceof Error ? retryError.message : i18n.t("errors.retry"));
     }
   }
 
@@ -223,16 +226,20 @@ export function useAppController() {
     const activeJobs = jobs.filter((job) => job.status === "queued" || job.status === "running");
     if (
       activeJobs.length > 0
-      && !window.confirm(`仍有 ${activeJobs.length} 个任务未完成。退出会取消任务并清理临时文件，是否继续？`)
+      && !window.confirm(i18n.t("errors.activeQuit", { count: activeJobs.length }))
     ) {
       return;
     }
     setShuttingDown(true);
     try {
-      await api.quit();
+      if (isDesktopApp()) {
+        await quitDesktopApp();
+      } else {
+        await api.quit();
+      }
     } catch (quitError) {
       setShuttingDown(false);
-      setError(quitError instanceof Error ? quitError.message : "无法退出 Bilidown");
+      setError(quitError instanceof Error ? quitError.message : i18n.t("errors.quit"));
     }
   }
 
@@ -240,9 +247,11 @@ export function useAppController() {
     try {
       await api.openOutput(outputDir);
     } catch (openError) {
-      setError(openError instanceof Error ? openError.message : "无法打开目录");
+      setError(openError instanceof Error ? openError.message : i18n.t("errors.openDirectory"));
     }
   }
+
+  const idleWarningMinutes = useDesktopLifecycle(jobs);
 
   return {
     api,
@@ -265,6 +274,7 @@ export function useAppController() {
     handleResolve,
     handleRetry,
     hasSession: Boolean(sessionToken),
+    idleWarningMinutes,
     jobs,
     outputDir,
     qualityId,

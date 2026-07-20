@@ -1,6 +1,8 @@
 import type { FormEventHandler } from "react";
+import { useTranslation } from "react-i18next";
 
 import type { AppStatus } from "../api";
+import type { SupportedLanguage } from "../i18n";
 
 interface AppHeaderProps {
   status: AppStatus | null;
@@ -8,6 +10,7 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ status, onQuit }: AppHeaderProps) {
+  const { i18n, t } = useTranslation();
   return (
     <header className="app-header">
       <div className="brand-mark">B</div>
@@ -17,11 +20,22 @@ export function AppHeader({ status, onQuit }: AppHeaderProps) {
       </div>
       <div className="header-actions">
         <div className="header-status">
-          <span>仅监听 127.0.0.1</span>
+          <span>{t("header.localOnly")}</span>
           {status && <span>v{status.app_version} · yt-dlp {status.yt_dlp_version}</span>}
         </div>
+        <label className="language-picker">
+          <span className="sr-only">{t("header.language")}</span>
+          <select
+            value={i18n.resolvedLanguage}
+            onChange={(event) => void i18n.changeLanguage(event.target.value as SupportedLanguage)}
+            aria-label={t("header.language")}
+          >
+            <option value="zh-CN">简体中文</option>
+            <option value="en-US">English</option>
+          </select>
+        </label>
         <button type="button" className="secondary-button app-quit" onClick={onQuit}>
-          退出 Bilidown
+          {t("header.quit")}
         </button>
       </div>
     </header>
@@ -29,15 +43,16 @@ export function AppHeader({ status, onQuit }: AppHeaderProps) {
 }
 
 export function AppHero() {
+  const { t } = useTranslation();
   return (
     <section className="hero">
       <div>
         <p className="eyebrow">BILIBILI UGC DOWNLOADER</p>
         <h2>
-          <span className="hero-line">把你有权保存的内容，</span>
-          <span className="hero-line hero-line-accent">留在本机。</span>
+          <span className="hero-line">{t("hero.line1")}</span>
+          <span className="hero-line hero-line-accent">{t("hero.line2")}</span>
         </h2>
-        <p>输入 BV 号、AV 号、视频链接或 b23.tv 短链。登录态、解析过程和下载记录不会发送给第三方。</p>
+        <p>{t("hero.description")}</p>
       </div>
       <div className="hero-number">01—03</div>
     </section>
@@ -59,21 +74,22 @@ export function ResolverPanel({
   onCredentialChange,
   onSubmit,
 }: ResolverPanelProps) {
+  const { t } = useTranslation();
   return (
     <section className="panel resolver-panel" aria-labelledby="resolver-heading">
-      <p className="eyebrow">视频定位</p>
-      <h2 id="resolver-heading">粘贴凭据并解析</h2>
+      <p className="eyebrow">{t("resolver.eyebrow")}</p>
+      <h2 id="resolver-heading">{t("resolver.title")}</h2>
       <form className="resolver-form" onSubmit={onSubmit}>
-        <label className="sr-only" htmlFor="credential">BV 号、AV 号或视频链接</label>
+        <label className="sr-only" htmlFor="credential">{t("resolver.label")}</label>
         <input
           id="credential"
           value={credential}
           onChange={(event) => onCredentialChange(event.target.value)}
-          placeholder="BV1xx411c7mD 或 https://www.bilibili.com/video/..."
+          placeholder={t("resolver.placeholder")}
           disabled={resolving}
           required
         />
-        <button type="submit" disabled={resolving}>{resolving ? "解析中…" : "解析视频"}</button>
+        <button type="submit" disabled={resolving}>{resolving ? t("resolver.resolving") : t("resolver.submit")}</button>
       </form>
       {error && <div className="error-banner" role="alert">{error}</div>}
     </section>
@@ -81,10 +97,11 @@ export function ResolverPanel({
 }
 
 export function AppFooter({ status }: { status: AppStatus | null }) {
+  const { t } = useTranslation();
   return (
     <footer>
-      <p>Bilidown 不绕过权限。请遵守 Bilibili 条款及适用版权法律。</p>
-      {status && <p>FFmpeg {status.ffmpeg_version ?? "未安装"}</p>}
+      <p>{t("footer.legal")}</p>
+      {status && <p>FFmpeg {status.ffmpeg_version ?? t("footer.missing")}</p>}
     </footer>
   );
 }

@@ -1,6 +1,13 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import type { ApiClient, AuthConfig, AuthStatus } from "../api";
+import {
+  closeBilibiliLogin,
+  collectBilibiliCookies,
+  isDesktopApp,
+  openBilibiliLogin,
+} from "../desktop";
 
 interface AuthPanelProps {
   api: ApiClient;
@@ -25,26 +32,67 @@ export function AuthPanel({
   onChange,
   disabled = false,
 }: AuthPanelProps) {
+  const { t } = useTranslation();
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [loginWindowOpen, setLoginWindowOpen] = useState(false);
 
-  async function handleCookieFile(file: File | undefined) {
-    if (!file) return;
+  async function handleCookieFile(file: File | undefined): Promise<boolean> {
+    if (!file) return false;
     setUploading(true);
     setMessage(null);
     try {
       const session = await api.uploadCookies(file);
       onChange({ kind: "cookie_session", session_id: session.session_id });
-      setMessage(`已载入 ${session.cookie_count} 条 Bilibili Cookie，本次运行有效。`);
+      setMessage(t("auth.loaded", { count: session.cookie_count }));
+      return true;
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Cookie 文件读取失败");
+      setMessage(error instanceof Error ? error.message : t("auth.fileError"));
+      return false;
     } finally {
       setUploading(false);
     }
   }
 
+  async function handleOpenLogin() {
+    setMessage(null);
+    try {
+      await openBilibiliLogin();
+      setLoginWindowOpen(true);
+      setMessage(t("auth.loginPrompt"));
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : t("auth.loginOpenError"));
+    }
+  }
+
+  async function handleImportLogin() {
+    setUploading(true);
+    setMessage(null);
+    try {
+      const imported = await collectBilibiliCookies();
+      const file = new File([imported.content], "tauri-login-cookies.txt", {
+        type: "text/plain",
+      });
+      const importedSuccessfully = await handleCookieFile(file);
+      if (importedSuccessfully) setLoginWindowOpen(false);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : t("auth.importError"));
+      setUploading(false);
+    }
+  }
+
+  async function handleCancelLogin() {
+    try {
+      await closeBilibiliLogin();
+      setLoginWindowOpen(false);
+      setMessage(null);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : t("auth.loginCloseError"));
+    }
+  }
+
   const sourceLabel = auth.kind === "guest"
-      ? "游客"
+      ? t("auth.guest")
       : auth.kind === "browser"
       ? auth.browser.charAt(0).toUpperCase() + auth.browser.slice(1)
       : "cookies.txt";
@@ -58,33 +106,33 @@ export function AuthPanel({
           ? "inactive"
           : "guest";
   const statusText = checking
-    ? "正在检查登录状态…"
+    ? t("auth.checking")
     : checkError
       ? checkError
       : authStatus?.state === "active"
-        ? `${authStatus.username ?? "已登录账号"} · ${authStatus.vip_active ? authStatus.vip_label ?? "大会员" : "普通账号"}`
+        ? `${authStatus.username ?? t("auth.activeUser")} · ${authStatus.vip_active ? authStatus.vip_label ?? t("auth.vip") : t("auth.regular")}`
         : authStatus?.state === "inactive"
-          ? "未检测到有效登录态"
-          : "未使用账号权限";
+          ? t("auth.inactive")
+          : t("auth.guestStatus");
 
   return (
     <section className="panel auth-panel" aria-labelledby="auth-heading">
       <div className="section-heading">
         <div>
-          <p className="eyebrow">登录权限</p>
-          <h2 id="auth-heading">选择登录来源</h2>
+          <p className="eyebrow">{t("auth.eyebrow")}</p>
+          <h2 id="auth-heading">{t("auth.title")}</h2>
         </div>
-        <span className="privacy-badge">仅本机处理</span>
+        <span className="privacy-badge">{t("auth.private")}</span>
       </div>
 
-      <div className="segmented" role="group" aria-label="登录来源">
+      <div className="segmented" role="group" aria-label={t("auth.sourceGroup")}>
         <button
           type="button"
           className={auth.kind === "guest" ? "active" : ""}
           onClick={() => onChange({ kind: "guest" })}
           disabled={disabled}
         >
-          游客
+          {t("auth.guest")}
         </button>
         {(["chrome", "edge", "firefox"] as const).map((browser) => (
           <button
@@ -101,7 +149,7 @@ export function AuthPanel({
 
       {auth.kind === "browser" && (
         <label className="field compact-field">
-          <span>浏览器 Profile（可选）</span>
+          <span>{t("auth.profile")}</span>
           <input
             value={auth.profile ?? ""}
             onChange={(event) =>
@@ -111,13 +159,45 @@ export function AuthPanel({
                   : { kind: "browser", browser: auth.browser },
               )
             }
-            placeholder="留空使用最近访问的 Profile"
+            placeholder={t("auth.profilePlaceholder")}
             disabled={disabled}
           />
         </label>
       )}
 
       <div className="cookie-row">
+        {isDesktopApp() && (
+          <>
+            <button
+              type="button"
+              className="file-button"
+              onClick={() => void handleOpenLogin()}
+              disabled={disabled || uploading}
+            >
+              {t("auth.oneClick")}
+            </button>
+            {loginWindowOpen && (
+              <>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => void handleImportLogin()}
+                  disabled={disabled || uploading}
+                >
+                  {uploading ? t("auth.importing") : t("auth.import")}
+                </button>
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={() => void handleCancelLogin()}
+                  disabled={disabled || uploading}
+                >
+                  {t("auth.cancelLogin")}
+                </button>
+              </>
+            )}
+          </>
+        )}
         <label className="file-button">
           <input
             type="file"
@@ -125,15 +205,19 @@ export function AuthPanel({
             onChange={(event) => void handleCookieFile(event.target.files?.[0])}
             disabled={disabled || uploading}
           />
-          {uploading ? "正在读取…" : "载入 cookies.txt"}
+          {uploading ? t("auth.loading") : t("auth.loadFile")}
         </label>
-        <span>{auth.kind === "cookie_session" ? "Cookie 文件登录已启用" : "也可使用 Netscape Cookie 文件"}</span>
+        <span>
+          {auth.kind === "cookie_session"
+            ? t("auth.sessionEnabled")
+            : t("auth.browserWarning")}
+        </span>
       </div>
       {message && <p className="inline-message" role="status">{message}</p>}
       <div className={`auth-status-card ${statusTone}`} aria-live="polite">
         <span className="auth-status-indicator" aria-hidden="true" />
         <div>
-          <strong>{sourceLabel}{autoSelected ? " · 自动选择" : ""}</strong>
+          <strong>{sourceLabel}{autoSelected ? ` · ${t("auth.auto")}` : ""}</strong>
           <p>{statusText}</p>
         </div>
         <button
@@ -142,7 +226,7 @@ export function AuthPanel({
           onClick={onRefresh}
           disabled={disabled || checking}
         >
-          重新检查
+          {t("auth.refresh")}
         </button>
       </div>
     </section>

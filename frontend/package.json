@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc -b && vite build",
+    "desktop": "cd ../src-tauri && node ../frontend/node_modules/@tauri-apps/cli/tauri.js",
+    "desktop:dev": "cd ../src-tauri && node ../frontend/node_modules/@tauri-apps/cli/tauri.js dev",
+    "desktop:build": "cd ../src-tauri && node ../frontend/node_modules/@tauri-apps/cli/tauri.js build",
     "schema:generate": "node ../packaging/generate-openapi.mjs && openapi-typescript openapi.json -o src/generated/api-schema.ts",
     "schema:check": "pnpm schema:generate && git diff --exit-code -- openapi.json src/generated/api-schema.ts",
     "test": "vitest run",
@@ -13,15 +16,19 @@
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
+    "@tauri-apps/api": "2.11.1",
+    "i18next": "25.5.2",
     "openapi-fetch": "0.17.0",
     "react": "19.2.7",
-    "react-dom": "19.2.7"
+    "react-dom": "19.2.7",
+    "react-i18next": "16.0.0"
   },
   "devDependencies": {
     "@playwright/test": "1.61.1",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "16.3.2",
     "@testing-library/user-event": "14.6.1",
+    "@tauri-apps/cli": "2.11.4",
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "@types/node": "24.13.3",

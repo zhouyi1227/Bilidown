@@ -28,6 +28,34 @@ def test_api_rejects_wrong_origin(tmp_path: Path) -> None:
     assert response.status_code == 403
 
 
+def test_desktop_origin_supports_cors_preflight(tmp_path: Path) -> None:
+    desktop_origin = "http://tauri.localhost"
+    app = create_app(
+        session_token=TOKEN,
+        expected_origin=ORIGIN,
+        additional_origins=(desktop_origin,),
+        static_dir=tmp_path / "missing",
+    )
+    with TestClient(app) as client:
+        preflight = client.options(
+            "/api/status",
+            headers={
+                "Origin": desktop_origin,
+                "Access-Control-Request-Method": "GET",
+                "Access-Control-Request-Headers": "X-Bilidown-Token",
+            },
+        )
+        response = client.get(
+            "/api/status",
+            headers={"X-Bilidown-Token": TOKEN, "Origin": desktop_origin},
+        )
+
+    assert preflight.status_code == 204
+    assert preflight.headers["access-control-allow-origin"] == desktop_origin
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == desktop_origin
+
+
 def test_status_and_cookie_session_lifecycle(tmp_path: Path) -> None:
     app = create_app(session_token=TOKEN, expected_origin=ORIGIN, static_dir=tmp_path / "missing")
     cookie_data = (

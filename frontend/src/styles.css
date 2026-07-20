@@ -47,6 +47,14 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   outline-offset: 3px;
 }
 
+.warning-banner {
+  margin: 18px 0;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--yellow) 60%, transparent);
+  background: color-mix(in srgb, var(--yellow) 10%, var(--surface));
+  color: #fff2b3;
+}
+
 .app-shell {
   width: min(1180px, calc(100% - 40px));
   margin: 0 auto;
@@ -82,6 +90,14 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   color: var(--muted);
   text-align: right;
   font: 13px/1.5 var(--font-mono);
+}
+
+.language-picker select {
+  min-width: 112px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  color: inherit;
+  background: var(--surface);
 }
 .header-actions { display: flex; align-items: center; gap: 14px; margin-left: auto; }
 .app-quit { white-space: nowrap; }
