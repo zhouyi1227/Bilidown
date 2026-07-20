@@ -18,13 +18,15 @@ pub fn run() {
         }))
         .plugin(tauri_plugin_shell::init())
         .manage(desktop::ExitState(AtomicBool::new(false)))
+        .manage(backend::BackendState::new())
         .setup(|app| {
-            let backend = backend::BackendState::start(app).map_err(std::io::Error::other)?;
-            app.manage(backend);
             app.manage(idle::IdleState::load(app));
-            desktop::setup_tray(app)?;
+            if let Err(error) = desktop::setup_tray(app) {
+                eprintln!("Bilidown tray setup failed: {error}");
+            }
             idle::spawn_monitor(app.handle().clone());
             desktop::show_main_window(app.handle());
+            backend::spawn_start(app.handle().clone());
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -42,6 +44,8 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             backend::backend_connection,
+            backend::backend_status,
+            backend::retry_backend,
             desktop::quit_app,
             idle::idle_settings,
             idle::mark_activity,

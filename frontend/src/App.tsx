@@ -2,13 +2,14 @@ import { AppFooter, AppHeader, AppHero, ResolverPanel } from "./components/AppCh
 import { useTranslation } from "react-i18next";
 import { AuthPanel } from "./components/AuthPanel";
 import { DownloadPanel } from "./components/DownloadPanel";
+import { DesktopStartupGate } from "./components/DesktopStartupGate";
 import { JobList } from "./components/JobList";
 import { LivePanel } from "./components/LivePanel";
 import { ResourcePreview } from "./components/ResourcePreview";
 import { VideoPreview } from "./components/VideoPreview";
 import { useAppController } from "./hooks/useAppController";
 
-export function App() {
+function AppContent() {
   const controller = useAppController();
   const { t } = useTranslation();
 
@@ -110,5 +111,13 @@ export function App() {
 
       <AppFooter status={controller.status} />
     </main>
+  );
+}
+
+export function App() {
+  return (
+    <DesktopStartupGate>
+      <AppContent />
+    </DesktopStartupGate>
   );
 }

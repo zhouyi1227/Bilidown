@@ -6,6 +6,11 @@ export interface BackendConnection {
   token: string;
 }
 
+export interface BackendStartupStatus {
+  state: "starting" | "ready" | "failed" | "stopping";
+  error_code: string | null;
+}
+
 export interface IdleWarning {
   minutes: number;
 }
@@ -19,6 +24,18 @@ export function getBackendConnection(browserToken: string): Promise<BackendConne
     return Promise.resolve({ base_url: "", token: browserToken });
   }
   return invoke<BackendConnection>("backend_connection");
+}
+
+export function getBackendStatus(): Promise<BackendStartupStatus> {
+  return invoke<BackendStartupStatus>("backend_status");
+}
+
+export function retryBackend(): Promise<BackendStartupStatus> {
+  return invoke<BackendStartupStatus>("retry_backend");
+}
+
+export function reloadDesktopApp(): void {
+  window.location.reload();
 }
 
 export function markDesktopActivity(): Promise<void> {
