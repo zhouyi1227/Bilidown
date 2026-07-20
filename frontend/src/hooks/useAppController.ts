@@ -17,6 +17,7 @@ import type {
 import { isDesktopApp, quitDesktopApp } from "../desktop";
 import i18n from "../i18n";
 import { useDesktopLifecycle } from "./useDesktopLifecycle";
+import { useLiveJobs } from "./useLiveJobs";
 
 const sessionToken = readSessionToken();
 const api = new ApiClient(sessionToken);
@@ -63,6 +64,8 @@ export function useAppController() {
   const [creating, setCreating] = useState(false);
   const [shuttingDown, setShuttingDown] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const reportError = useCallback((message: string) => setError(message), []);
+  const live = useLiveJobs(api, reportError);
   const watchedJobs = useRef(new Set<string>());
   const skipNextAuthCheck = useRef(true);
 
@@ -83,16 +86,18 @@ export function useAppController() {
     Promise.all([
       api.getStatus(),
       api.listJobs(),
+      api.listLiveJobs(),
       api.autoSelectAuth().catch((): AutoAuthResult => ({
         auth: { kind: "guest" },
         status: { state: "guest", username: null, vip_active: false, vip_label: null },
       })),
     ])
-      .then(([nextStatus, nextJobs, autoAuth]) => {
+      .then(([nextStatus, nextJobs, nextLiveJobs, autoAuth]) => {
         if (controller.signal.aborted) return;
         setStatus(nextStatus);
         setOutputDir(nextStatus.default_output_dir);
         setJobs(nextJobs);
+        live.setJobs(nextLiveJobs);
         nextJobs.forEach(watchJob);
         setAuth(autoAuth.auth);
         setAuthStatus(autoAuth.status);
@@ -110,7 +115,7 @@ export function useAppController() {
         }
       });
     return () => controller.abort();
-  }, [watchJob]);
+  }, [live.setJobs, watchJob]);
 
   useEffect(() => {
     if (!sessionToken || authInitializing) return;
@@ -267,6 +272,20 @@ export function useAppController() {
     }
   }
 
+  async function handleStartLive() {
+    if (!resource || resource.kind !== "live") return;
+    setError(null);
+    await live.start(resource, qualityHeight, auth, outputDir);
+  }
+
+  async function handleStopLive(jobId: string) {
+    await live.stop(jobId);
+  }
+
+  async function handleCancelLive(jobId: string) {
+    await live.cancel(jobId);
+  }
+
   async function handleRetry(jobId: string) {
     try {
       const job = await api.retryJob(jobId);
@@ -279,9 +298,16 @@ export function useAppController() {
 
   async function handleQuit() {
     const activeJobs = jobs.filter((job) => job.status === "queued" || job.status === "running");
+    const activeLiveJobs = live.jobs.filter(
+      (job) => job.status === "recording" || job.status === "stopping",
+    );
     if (
-      activeJobs.length > 0
-      && !window.confirm(i18n.t("errors.activeQuit", { count: activeJobs.length }))
+      activeJobs.length + activeLiveJobs.length > 0
+      && !window.confirm(
+        i18n.t("errors.activeQuit", {
+          count: activeJobs.length + activeLiveJobs.length,
+        }),
+      )
     ) {
       return;
     }
@@ -306,7 +332,7 @@ export function useAppController() {
     }
   }
 
-  const idleWarningMinutes = useDesktopLifecycle(jobs);
+  const idleWarningMinutes = useDesktopLifecycle(jobs, live.jobs);
 
   return {
     api,
@@ -319,18 +345,23 @@ export function useAppController() {
     autoSelected,
     commonQualities,
     creating,
+    creatingLive: live.creating,
     credential,
     error,
     handleAuthChange,
     handleCancel,
+    handleCancelLive,
     handleCreate,
     handleOpenOutput,
     handleQuit,
     handleResolve,
     handleRetry,
+    handleStartLive,
+    handleStopLive,
     hasSession: Boolean(sessionToken),
     idleWarningMinutes,
     jobs,
+    liveJobs: live.jobs,
     outputDir,
     qualityId,
     qualityHeight,

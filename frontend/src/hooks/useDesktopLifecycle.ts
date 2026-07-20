@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import type { JobView } from "../api";
+import type { JobView, LiveJobView } from "../api";
 import {
   isDesktopApp,
   listenForIdleWarning,
@@ -10,7 +10,10 @@ import {
 
 const ACTIVITY_THROTTLE_MS = 20_000;
 
-export function useDesktopLifecycle(jobs: JobView[]): number | null {
+export function useDesktopLifecycle(
+  jobs: JobView[],
+  liveJobs: LiveJobView[],
+): number | null {
   const [warningMinutes, setWarningMinutes] = useState<number | null>(null);
 
   useEffect(() => {
@@ -33,9 +36,13 @@ export function useDesktopLifecycle(jobs: JobView[]): number | null {
   }, []);
 
   useEffect(() => {
-    const active = jobs.some((job) => job.status === "queued" || job.status === "running");
+    const active =
+      jobs.some((job) => job.status === "queued" || job.status === "running")
+      || liveJobs.some(
+        (job) => job.status === "recording" || job.status === "stopping",
+      );
     void setDesktopActiveJobs(active);
-  }, [jobs]);
+  }, [jobs, liveJobs]);
 
   return warningMinutes;
 }

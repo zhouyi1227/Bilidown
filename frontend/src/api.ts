@@ -22,6 +22,8 @@ export type AppStatus = Schemas["AppStatus"];
 export type JobStatus = Schemas["JobStatus"];
 export type CreateJobRequest = Schemas["CreateJobRequest-Input"];
 export type JobView = Schemas["JobView"];
+export type LiveJobView = Schemas["LiveJobView"];
+export type CreateLiveJobRequest = Schemas["CreateLiveJobRequest-Input"];
 export type CookieSessionResult = Schemas["CookieSessionResult"];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -32,7 +34,13 @@ function extractError(payload: unknown, fallback: string): string {
   if (!isRecord(payload) || !("detail" in payload)) return fallback;
   const detail = payload.detail;
   if (typeof detail === "string") return detail;
-  if (isRecord(detail) && typeof detail.message === "string") return detail.message;
+  if (isRecord(detail) && typeof detail.message === "string") {
+    if (typeof detail.code === "string") {
+      const key = `backendErrors.${detail.code}`;
+      if (i18n.exists(key)) return i18n.t(key);
+    }
+    return detail.message;
+  }
   if (Array.isArray(detail)) {
     const first = detail.find(
       (item): item is Record<string, unknown> => isRecord(item) && typeof item.msg === "string",
@@ -187,6 +195,49 @@ export class ApiClient {
     const { data, error, response } = await client.POST("/api/jobs", {
       body: request,
     });
+    return requireData(data, error, response);
+  }
+
+  async listLiveJobs(): Promise<LiveJobView[]> {
+    const client = await this.client;
+    const { data, error, response } = await client.GET("/api/live/jobs");
+    return requireData(data, error, response);
+  }
+
+  async createLiveJob(
+    request: CreateLiveJobRequest,
+  ): Promise<LiveJobView> {
+    const client = await this.client;
+    const { data, error, response } = await client.POST("/api/live/jobs", {
+      body: request,
+    });
+    return requireData(data, error, response);
+  }
+
+  async getLiveJob(jobId: string): Promise<LiveJobView> {
+    const client = await this.client;
+    const { data, error, response } = await client.GET(
+      "/api/live/jobs/{job_id}",
+      { params: { path: { job_id: jobId } } },
+    );
+    return requireData(data, error, response);
+  }
+
+  async stopLiveJob(jobId: string): Promise<LiveJobView> {
+    const client = await this.client;
+    const { data, error, response } = await client.POST(
+      "/api/live/jobs/{job_id}/stop",
+      { params: { path: { job_id: jobId } } },
+    );
+    return requireData(data, error, response);
+  }
+
+  async cancelLiveJob(jobId: string): Promise<LiveJobView> {
+    const client = await this.client;
+    const { data, error, response } = await client.POST(
+      "/api/live/jobs/{job_id}/cancel",
+      { params: { path: { job_id: jobId } } },
+    );
     return requireData(data, error, response);
   }
 

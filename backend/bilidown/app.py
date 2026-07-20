@@ -25,6 +25,7 @@ from .input_parser import (
     normalize_resource_url,
 )
 from .jobs import JobManager
+from .live import LiveJobManager, LiveRecorder
 from .models import (
     AppStatus,
     AutoAuthResult,
@@ -32,8 +33,10 @@ from .models import (
     AuthStatusRequest,
     CreateJobRequest,
     CookieSessionResult,
+    CreateLiveJobRequest,
     JobStatus,
     JobView,
+    LiveJobView,
     OpenOutputRequest,
     ResolveRequest,
     ResourceResolveRequest,
@@ -42,6 +45,7 @@ from .models import (
 )
 from .runtime import ffmpeg_version, find_ffmpeg_binary, frontend_dist
 from .security import LocalSecurityMiddleware
+from .yt_adapter import DEFAULT_YT_ADAPTER
 
 
 def default_output_directory() -> Path:
@@ -73,6 +77,9 @@ def create_app(
     cookies = CookieStore()
     engine = DownloaderEngine(cookies)
     jobs = JobManager(engine)
+    live_jobs = LiveJobManager(
+        LiveRecorder(cookies, DEFAULT_YT_ADAPTER, engine.base_options)
+    )
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
@@ -80,6 +87,7 @@ def create_app(
         try:
             yield
         finally:
+            await live_jobs.stop_all()
             await jobs.stop()
             cookies.clear()
 
@@ -87,6 +95,7 @@ def create_app(
     app.state.cookie_store = cookies
     app.state.engine = engine
     app.state.jobs = jobs
+    app.state.live_jobs = live_jobs
     app.add_middleware(
         LocalSecurityMiddleware,
         token=session_token,
@@ -221,6 +230,39 @@ def create_app(
             raise HTTPException(status_code=404, detail="任务不存在") from exc
         except ValueError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    @app.get("/api/live/jobs", response_model=list[LiveJobView])
+    async def list_live_jobs() -> list[LiveJobView]:
+        return live_jobs.list()
+
+    @app.post("/api/live/jobs", response_model=LiveJobView, status_code=201)
+    async def create_live_job(request: CreateLiveJobRequest) -> LiveJobView:
+        try:
+            ensure_output_directory(request.output_dir)
+            return await live_jobs.submit(request)
+        except (InvalidCredential, ValueError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    @app.get("/api/live/jobs/{job_id}", response_model=LiveJobView)
+    async def get_live_job(job_id: str) -> LiveJobView:
+        try:
+            return live_jobs.get(job_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail="直播任务不存在") from exc
+
+    @app.post("/api/live/jobs/{job_id}/stop", response_model=LiveJobView)
+    async def stop_live_job(job_id: str) -> LiveJobView:
+        try:
+            return live_jobs.stop(job_id, keep=True)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail="直播任务不存在") from exc
+
+    @app.post("/api/live/jobs/{job_id}/cancel", response_model=LiveJobView)
+    async def cancel_live_job(job_id: str) -> LiveJobView:
+        try:
+            return live_jobs.stop(job_id, keep=False)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail="直播任务不存在") from exc
 
     @app.get("/api/jobs/{job_id}/events")
     async def job_events(job_id: str) -> StreamingResponse:

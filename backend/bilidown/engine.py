@@ -78,17 +78,17 @@ class DownloaderEngine:
         self._resources = ResourceResolver(
             cookie_store,
             adapter,
-            self._base_options,
+            self.base_options,
         )
         self._downloads = MediaDownloadService(
             cookie_store,
             adapter,
-            self._base_options,
+            self.base_options,
             self.resolve,
         )
 
     @staticmethod
-    def _base_options(logger: EngineLogger) -> dict[str, object]:
+    def base_options(logger: EngineLogger) -> dict[str, object]:
         options: dict[str, object] = {
             "quiet": True,
             "no_warnings": True,
@@ -111,7 +111,7 @@ class DownloaderEngine:
         try:
             with self.cookie_store.yt_dlp_options(auth) as cookie_options:
                 options: dict[str, object] = {
-                    **self._base_options(logger),
+                    **self.base_options(logger),
                     **cookie_options,
                     "skip_download": True,
                     "http_headers": {
@@ -203,7 +203,7 @@ class DownloaderEngine:
         try:
             with self.cookie_store.yt_dlp_options(auth) as cookie_options:
                 options: dict[str, object] = {
-                    **self._base_options(logger),
+                    **self.base_options(logger),
                     **cookie_options,
                     "skip_download": True,
                     "noplaylist": False,

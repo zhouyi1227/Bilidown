@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { AuthPanel } from "./components/AuthPanel";
 import { DownloadPanel } from "./components/DownloadPanel";
 import { JobList } from "./components/JobList";
+import { LivePanel } from "./components/LivePanel";
 import { ResourcePreview } from "./components/ResourcePreview";
 import { VideoPreview } from "./components/VideoPreview";
 import { useAppController } from "./hooks/useAppController";
@@ -63,7 +64,20 @@ export function App() {
           onSelectedItemsChange={controller.setSelectedItems}
         />
       )}
-      {controller.resource && controller.status && (
+      {controller.resource?.kind === "live" && (
+        <LivePanel
+          jobs={controller.liveJobs}
+          outputDir={controller.outputDir}
+          qualityHeight={controller.qualityHeight}
+          busy={controller.creatingLive}
+          onOutputDirChange={controller.setOutputDir}
+          onQualityHeightChange={controller.setQualityHeight}
+          onStart={() => void controller.handleStartLive()}
+          onStop={(id) => void controller.handleStopLive(id)}
+          onCancel={(id) => void controller.handleCancelLive(id)}
+        />
+      )}
+      {controller.resource && controller.resource.kind !== "live" && controller.status && (
         <DownloadPanel
           status={controller.status}
           outputDir={controller.outputDir}

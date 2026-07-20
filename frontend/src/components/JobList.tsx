@@ -84,7 +84,13 @@ export function JobList({ jobs, onCancel, onRetry }: JobListProps) {
                   {job.item_results
                     .filter((item) => item.status === "failed")
                     .map((item) => (
-                      <p key={item.url}>{item.url}: {item.error_message ?? t("jobs.failed")}</p>
+                      <p key={item.url}>
+                        {item.url}: {item.error_code
+                          ? t(`backendErrors.${item.error_code}`, {
+                              defaultValue: item.error_message ?? t("jobs.failed"),
+                            })
+                          : item.error_message ?? t("jobs.failed")}
+                      </p>
                     ))}
                 </details>
               )}

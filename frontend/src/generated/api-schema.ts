@@ -175,6 +175,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/live/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Live Jobs */
+        get: operations["list_live_jobs_api_live_jobs_get"];
+        put?: never;
+        /** Create Live Job */
+        post: operations["create_live_job_api_live_jobs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/live/jobs/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Live Job */
+        get: operations["get_live_job_api_live_jobs__job_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/live/jobs/{job_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Live Job */
+        post: operations["cancel_live_job_api_live_jobs__job_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/live/jobs/{job_id}/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stop Live Job */
+        post: operations["stop_live_job_api_live_jobs__job_id__stop_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/open-output": {
         parameters: {
             query?: never;
@@ -423,6 +492,34 @@ export interface components {
             /** @default compatible_mp4 */
             video_mode: components["schemas"]["VideoMode"];
         };
+        /** CreateLiveJobRequest */
+        "CreateLiveJobRequest-Input": {
+            /** Auth */
+            auth?: components["schemas"]["GuestAuth-Input"] | components["schemas"]["BrowserAuth-Input"] | components["schemas"]["CookieSessionAuth-Input"];
+            /** Credential */
+            credential: string;
+            /** Output Dir */
+            output_dir: string;
+            /**
+             * Quality Height
+             * @default 1080
+             */
+            quality_height: number;
+        };
+        /** CreateLiveJobRequest */
+        "CreateLiveJobRequest-Output": {
+            /** Auth */
+            auth: components["schemas"]["GuestAuth-Output"] | components["schemas"]["BrowserAuth-Output"] | components["schemas"]["CookieSessionAuth-Output"];
+            /** Credential */
+            credential: string;
+            /** Output Dir */
+            output_dir: string;
+            /**
+             * Quality Height
+             * @default 1080
+             */
+            quality_height: number;
+        };
         /** GuestAuth */
         "GuestAuth-Input": {
             /**
@@ -502,6 +599,28 @@ export interface components {
             /** Result Paths */
             result_paths: string[];
             status: components["schemas"]["JobStatus"];
+            /** Updated At */
+            updated_at: string;
+        };
+        /**
+         * LiveJobStatus
+         * @enum {string}
+         */
+        LiveJobStatus: "recording" | "stopping" | "completed" | "failed" | "cancelled";
+        /** LiveJobView */
+        LiveJobView: {
+            /** Created At */
+            created_at: string;
+            /** Error Code */
+            error_code: string | null;
+            /** Error Message */
+            error_message: string | null;
+            /** Id */
+            id: string;
+            request: components["schemas"]["CreateLiveJobRequest-Output"];
+            /** Result Paths */
+            result_paths: string[];
+            status: components["schemas"]["LiveJobStatus"];
             /** Updated At */
             updated_at: string;
         };
@@ -992,6 +1111,152 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JobView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_live_jobs_api_live_jobs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LiveJobView"][];
+                };
+            };
+        };
+    };
+    create_live_job_api_live_jobs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateLiveJobRequest-Input"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LiveJobView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_live_job_api_live_jobs__job_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LiveJobView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_live_job_api_live_jobs__job_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LiveJobView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stop_live_job_api_live_jobs__job_id__stop_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LiveJobView"];
                 };
             };
             /** @description Validation Error */

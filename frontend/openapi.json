@@ -531,6 +531,110 @@
         "title": "CreateJobRequest",
         "type": "object"
       },
+      "CreateLiveJobRequest-Input": {
+        "properties": {
+          "auth": {
+            "discriminator": {
+              "mapping": {
+                "browser": "#/components/schemas/BrowserAuth-Input",
+                "cookie_session": "#/components/schemas/CookieSessionAuth-Input",
+                "guest": "#/components/schemas/GuestAuth-Input"
+              },
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GuestAuth-Input"
+              },
+              {
+                "$ref": "#/components/schemas/BrowserAuth-Input"
+              },
+              {
+                "$ref": "#/components/schemas/CookieSessionAuth-Input"
+              }
+            ],
+            "title": "Auth"
+          },
+          "credential": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Credential",
+            "type": "string"
+          },
+          "output_dir": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Output Dir",
+            "type": "string"
+          },
+          "quality_height": {
+            "default": 1080,
+            "maximum": 4320.0,
+            "minimum": 144.0,
+            "title": "Quality Height",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "credential",
+          "output_dir"
+        ],
+        "title": "CreateLiveJobRequest",
+        "type": "object"
+      },
+      "CreateLiveJobRequest-Output": {
+        "properties": {
+          "auth": {
+            "discriminator": {
+              "mapping": {
+                "browser": "#/components/schemas/BrowserAuth-Output",
+                "cookie_session": "#/components/schemas/CookieSessionAuth-Output",
+                "guest": "#/components/schemas/GuestAuth-Output"
+              },
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GuestAuth-Output"
+              },
+              {
+                "$ref": "#/components/schemas/BrowserAuth-Output"
+              },
+              {
+                "$ref": "#/components/schemas/CookieSessionAuth-Output"
+              }
+            ],
+            "title": "Auth"
+          },
+          "credential": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Credential",
+            "type": "string"
+          },
+          "output_dir": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Output Dir",
+            "type": "string"
+          },
+          "quality_height": {
+            "default": 1080,
+            "maximum": 4320.0,
+            "minimum": 144.0,
+            "title": "Quality Height",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "credential",
+          "quality_height",
+          "auth",
+          "output_dir"
+        ],
+        "title": "CreateLiveJobRequest",
+        "type": "object"
+      },
       "GuestAuth-Input": {
         "properties": {
           "kind": {
@@ -796,6 +900,80 @@
           "updated_at"
         ],
         "title": "JobView",
+        "type": "object"
+      },
+      "LiveJobStatus": {
+        "enum": [
+          "recording",
+          "stopping",
+          "completed",
+          "failed",
+          "cancelled"
+        ],
+        "title": "LiveJobStatus",
+        "type": "string"
+      },
+      "LiveJobView": {
+        "properties": {
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "request": {
+            "$ref": "#/components/schemas/CreateLiveJobRequest-Output"
+          },
+          "result_paths": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Result Paths",
+            "type": "array"
+          },
+          "status": {
+            "$ref": "#/components/schemas/LiveJobStatus"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "request",
+          "result_paths",
+          "error_code",
+          "error_message",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "LiveJobView",
         "type": "object"
       },
       "MediaKind": {
@@ -1764,6 +1942,181 @@
           }
         },
         "summary": "Retry Job"
+      }
+    },
+    "/api/live/jobs": {
+      "get": {
+        "operationId": "list_live_jobs_api_live_jobs_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LiveJobView"
+                  },
+                  "title": "Response List Live Jobs Api Live Jobs Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Live Jobs"
+      },
+      "post": {
+        "operationId": "create_live_job_api_live_jobs_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateLiveJobRequest-Input"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveJobView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Live Job"
+      }
+    },
+    "/api/live/jobs/{job_id}": {
+      "get": {
+        "operationId": "get_live_job_api_live_jobs__job_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveJobView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Live Job"
+      }
+    },
+    "/api/live/jobs/{job_id}/cancel": {
+      "post": {
+        "operationId": "cancel_live_job_api_live_jobs__job_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveJobView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Live Job"
+      }
+    },
+    "/api/live/jobs/{job_id}/stop": {
+      "post": {
+        "operationId": "stop_live_job_api_live_jobs__job_id__stop_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveJobView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Stop Live Job"
       }
     },
     "/api/open-output": {

@@ -63,6 +63,7 @@ const resolvedResource = {
 };
 
 test("resolve and create a video task", async ({ page }) => {
+  await page.route("**/api/live/jobs", (route) => route.fulfill({ json: [] }));
   await page.route("**/api/status", (route) => route.fulfill({ json: {
     app_version: "0.1.0",
     yt_dlp_version: "test",
@@ -107,6 +108,7 @@ test("resolve and create a video task", async ({ page }) => {
 });
 
 test("auto-selects Edge and confirms before exiting active jobs", async ({ page }) => {
+  await page.route("**/api/live/jobs", (route) => route.fulfill({ json: [] }));
   await page.route("**/api/status", (route) => route.fulfill({ json: {
     app_version: "0.1.1",
     yt_dlp_version: "test",

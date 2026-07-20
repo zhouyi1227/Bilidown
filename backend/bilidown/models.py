@@ -267,6 +267,37 @@ class JobView(ApiModel):
     updated_at: str
 
 
+class LiveJobStatus(StrEnum):
+    RECORDING = "recording"
+    STOPPING = "stopping"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
+class CreateLiveJobRequest(ApiModel):
+    credential: str = Field(min_length=1, max_length=2048)
+    quality_height: int = Field(default=1080, ge=144, le=4320)
+    auth: AuthConfig = Field(default_factory=GuestAuth)
+    output_dir: str = Field(min_length=1, max_length=1000)
+
+    @field_validator("credential", "output_dir")
+    @classmethod
+    def strip_live_text(cls, value: str) -> str:
+        return value.strip()
+
+
+class LiveJobView(ApiModel):
+    id: str
+    status: LiveJobStatus
+    request: CreateLiveJobRequest
+    result_paths: list[str] = Field(default_factory=list)
+    error_code: str | None = None
+    error_message: str | None = None
+    created_at: str
+    updated_at: str
+
+
 class AppStatus(ApiModel):
     app_version: str
     yt_dlp_version: str
