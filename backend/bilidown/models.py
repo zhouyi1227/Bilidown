@@ -3,20 +3,24 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
-class GuestAuth(BaseModel):
+class ApiModel(BaseModel):
+    model_config = ConfigDict(json_schema_serialization_defaults_required=True)
+
+
+class GuestAuth(ApiModel):
     kind: Literal["guest"] = "guest"
 
 
-class BrowserAuth(BaseModel):
+class BrowserAuth(ApiModel):
     kind: Literal["browser"] = "browser"
     browser: Literal["chrome", "edge", "firefox"]
     profile: str | None = Field(default=None, max_length=260)
 
 
-class CookieSessionAuth(BaseModel):
+class CookieSessionAuth(ApiModel):
     kind: Literal["cookie_session"] = "cookie_session"
     session_id: str = Field(min_length=1, max_length=100)
 
@@ -27,7 +31,7 @@ AuthConfig = Annotated[
 ]
 
 
-class ResolveRequest(BaseModel):
+class ResolveRequest(ApiModel):
     credential: str = Field(min_length=1, max_length=2048)
     auth: AuthConfig = Field(default_factory=GuestAuth)
 
@@ -40,23 +44,23 @@ class ResolveRequest(BaseModel):
         return value
 
 
-class AuthStatusRequest(BaseModel):
+class AuthStatusRequest(ApiModel):
     auth: AuthConfig = Field(default_factory=GuestAuth)
 
 
-class AuthStatus(BaseModel):
+class AuthStatus(ApiModel):
     state: Literal["guest", "active", "inactive"]
     username: str | None = None
     vip_active: bool = False
     vip_label: str | None = None
 
 
-class AutoAuthResult(BaseModel):
+class AutoAuthResult(ApiModel):
     auth: AuthConfig
     status: AuthStatus
 
 
-class QualityOption(BaseModel):
+class QualityOption(ApiModel):
     id: str
     label: str
     height: int
@@ -73,7 +77,7 @@ class QualityOption(BaseModel):
     compatibility: Literal["preferred", "fallback"] = "fallback"
 
 
-class VideoPage(BaseModel):
+class VideoPage(ApiModel):
     index: int
     cid: int | None = None
     title: str
@@ -81,7 +85,7 @@ class VideoPage(BaseModel):
     qualities: list[QualityOption]
 
 
-class ResolvedVideo(BaseModel):
+class ResolvedVideo(ApiModel):
     canonical_url: str
     bvid: str
     aid: int | None = None
@@ -119,7 +123,7 @@ class JobStatus(StrEnum):
     CANCELLED = "cancelled"
 
 
-class CreateJobRequest(BaseModel):
+class CreateJobRequest(ApiModel):
     credential: str = Field(min_length=1, max_length=2048)
     media_kind: MediaKind
     page_indices: list[int] = Field(default_factory=list, max_length=100)
@@ -155,7 +159,7 @@ class CreateJobRequest(BaseModel):
         return self
 
 
-class JobProgress(BaseModel):
+class JobProgress(ApiModel):
     phase: str = "queued"
     current_page: int | None = None
     downloaded_bytes: int | None = None
@@ -165,7 +169,7 @@ class JobProgress(BaseModel):
     eta: float | None = None
 
 
-class JobView(BaseModel):
+class JobView(ApiModel):
     id: str
     status: JobStatus
     request: CreateJobRequest
@@ -177,7 +181,7 @@ class JobView(BaseModel):
     updated_at: str
 
 
-class AppStatus(BaseModel):
+class AppStatus(ApiModel):
     app_version: str
     yt_dlp_version: str
     ffmpeg_version: str | None
@@ -185,5 +189,10 @@ class AppStatus(BaseModel):
     default_output_dir: str
 
 
-class OpenOutputRequest(BaseModel):
+class OpenOutputRequest(ApiModel):
     path: str = Field(min_length=1, max_length=1000)
+
+
+class CookieSessionResult(ApiModel):
+    session_id: str
+    cookie_count: int

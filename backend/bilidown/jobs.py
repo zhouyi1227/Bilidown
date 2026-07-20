@@ -12,8 +12,9 @@ from yt_dlp.utils import DownloadCancelled
 
 from .cookies import InvalidCookieFile
 from .engine import DownloaderEngine, EngineError
-from .input_parser import InvalidCredential, NormalizedCredential, normalize_credential
+from .input_parser import NormalizedCredential, normalize_credential
 from .models import CreateJobRequest, JobProgress, JobStatus, JobView
+from .progress import ProgressUpdate
 
 
 def _now() -> str:
@@ -119,7 +120,7 @@ class JobManager:
                     continue
                 self._update_record(record, status=JobStatus.RUNNING, phase="resolving")
 
-                def progress(update: dict[str, object]) -> None:
+                def progress(update: ProgressUpdate) -> None:
                     if self._loop is not None:
                         self._loop.call_soon_threadsafe(self._apply_progress, job_id, update)
 
@@ -169,16 +170,26 @@ class JobManager:
             finally:
                 self._queue.task_done()
 
-    def _apply_progress(self, job_id: str, update: dict[str, object]) -> None:
+    def _apply_progress(self, job_id: str, update: ProgressUpdate) -> None:
         record = self._jobs.get(job_id)
         if record is None or record.status != JobStatus.RUNNING:
             return
-        allowed = {
-            key: value
-            for key, value in update.items()
-            if key in JobProgress.model_fields and value is not None
-        }
-        self._update_record(record, **allowed)
+        if "phase" in update:
+            record.progress.phase = update["phase"]
+        if "current_page" in update:
+            record.progress.current_page = update["current_page"]
+        if "downloaded_bytes" in update:
+            record.progress.downloaded_bytes = update["downloaded_bytes"]
+        if "total_bytes" in update:
+            record.progress.total_bytes = update["total_bytes"]
+        if "percent" in update:
+            record.progress.percent = update["percent"]
+        if "speed" in update:
+            record.progress.speed = update["speed"]
+        if "eta" in update:
+            record.progress.eta = update["eta"]
+        record.updated_at = _now()
+        record.version += 1
 
     def _update_record(
         self,
@@ -198,4 +209,3 @@ class JobManager:
         record.error_message = error_message
         record.updated_at = _now()
         record.version += 1
-

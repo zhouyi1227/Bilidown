@@ -1,192 +1,194 @@
+import createClient, { type Middleware } from "openapi-fetch";
+
+import type { components, paths } from "./generated/api-schema";
+
+type Schemas = components["schemas"];
+
 export type AuthConfig =
-  | { kind: "guest" }
-  | { kind: "browser"; browser: "chrome" | "edge" | "firefox"; profile?: string }
-  | { kind: "cookie_session"; session_id: string };
+  | Schemas["GuestAuth-Input"]
+  | Schemas["BrowserAuth-Input"]
+  | Schemas["CookieSessionAuth-Input"];
+export type AuthStatus = Schemas["AuthStatus"];
+export type AutoAuthResult = Schemas["AutoAuthResult"];
+export type QualityOption = Schemas["QualityOption"];
+export type VideoPage = Schemas["VideoPage"];
+export type ResolvedVideo = Schemas["ResolvedVideo"];
+export type AppStatus = Schemas["AppStatus"];
+export type JobStatus = Schemas["JobStatus"];
+export type CreateJobRequest = Schemas["CreateJobRequest-Input"];
+export type JobView = Schemas["JobView"];
+export type CookieSessionResult = Schemas["CookieSessionResult"];
 
-export interface AuthStatus {
-  state: "guest" | "active" | "inactive";
-  username: string | null;
-  vip_active: boolean;
-  vip_label: string | null;
-}
-
-export interface AutoAuthResult {
-  auth: AuthConfig;
-  status: AuthStatus;
-}
-
-export interface QualityOption {
-  id: string;
-  label: string;
-  height: number;
-  width: number | null;
-  fps: number | null;
-  quality_code: number | null;
-  format_name: string;
-  bitrate_kbps: number | null;
-  dynamic_range: string | null;
-  codec_family: "H.264" | "HEVC" | "AV1" | "Other";
-  video_codec: string;
-  audio_codec: string | null;
-  container: string;
-  compatibility: "preferred" | "fallback";
-}
-
-export interface VideoPage {
-  index: number;
-  cid: number | null;
-  title: string;
-  duration: number | null;
-  qualities: QualityOption[];
-}
-
-export interface ResolvedVideo {
-  canonical_url: string;
-  bvid: string;
-  aid: number | null;
-  title: string;
-  uploader: string | null;
-  thumbnail: string | null;
-  duration: number | null;
-  selected_page: number;
-  pages: VideoPage[];
-}
-
-export interface AppStatus {
-  app_version: string;
-  yt_dlp_version: string;
-  ffmpeg_version: string | null;
-  ffmpeg_available: boolean;
-  default_output_dir: string;
-}
-
-export type JobStatus = "queued" | "running" | "completed" | "failed" | "cancelled";
-
-export interface CreateJobRequest {
-  credential: string;
-  media_kind: "cover" | "audio" | "video";
-  page_indices: number[];
-  quality_height?: number;
-  quality_id?: string;
-  video_mode: "compatible_mp4" | "source_auto";
-  audio_format: "original" | "best_source" | "m4a" | "mp3";
-  auth: AuthConfig;
-  output_dir: string;
-}
-
-export interface JobView {
-  id: string;
-  status: JobStatus;
-  request: CreateJobRequest;
-  progress: {
-    phase: string;
-    current_page: number | null;
-    downloaded_bytes: number | null;
-    total_bytes: number | null;
-    percent: number | null;
-    speed: number | null;
-    eta: number | null;
-  };
-  result_paths: string[];
-  error_code: string | null;
-  error_message: string | null;
-  created_at: string;
-  updated_at: string;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
 
 function extractError(payload: unknown, fallback: string): string {
-  if (typeof payload !== "object" || payload === null || !("detail" in payload)) {
-    return fallback;
-  }
-  const detail = (payload as { detail: unknown }).detail;
+  if (!isRecord(payload) || !("detail" in payload)) return fallback;
+  const detail = payload.detail;
   if (typeof detail === "string") return detail;
-  if (typeof detail === "object" && detail !== null && "message" in detail) {
-    return String((detail as { message: unknown }).message);
+  if (isRecord(detail) && typeof detail.message === "string") return detail.message;
+  if (Array.isArray(detail)) {
+    const first = detail.find(
+      (item): item is Record<string, unknown> => isRecord(item) && typeof item.msg === "string",
+    );
+    if (first && typeof first.msg === "string") return first.msg;
   }
   return fallback;
 }
 
+function requireData<T>(
+  data: T | undefined,
+  error: unknown,
+  response: Response,
+): T {
+  if (data !== undefined) return data;
+  throw new Error(extractError(error, `请求失败 (${response.status})`));
+}
+
+function requireSuccess(error: unknown, response: Response): void {
+  if (response.ok) return;
+  throw new Error(extractError(error, `请求失败 (${response.status})`));
+}
+
+const JOB_STATUSES = new Set<JobStatus>([
+  "queued",
+  "running",
+  "completed",
+  "failed",
+  "cancelled",
+]);
+
+function parseJobView(value: unknown): JobView {
+  if (
+    !isRecord(value)
+    || typeof value.id !== "string"
+    || typeof value.status !== "string"
+    || !JOB_STATUSES.has(value.status as JobStatus)
+    || !isRecord(value.request)
+    || !isRecord(value.progress)
+    || !Array.isArray(value.result_paths)
+    || typeof value.created_at !== "string"
+    || typeof value.updated_at !== "string"
+  ) {
+    throw new Error("任务进度响应格式无效");
+  }
+  return value as JobView;
+}
+
 export class ApiClient {
-  constructor(private readonly token: string) {}
+  private readonly client: ReturnType<typeof createClient<paths>>;
 
-  private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
-    const headers = new Headers(init.headers);
-    headers.set("X-Bilidown-Token", this.token);
-    if (init.body && !(init.body instanceof FormData)) {
-      headers.set("Content-Type", "application/json");
-    }
-    const response = await fetch(path, { ...init, headers });
-    if (!response.ok) {
-      let payload: unknown;
-      try {
-        payload = await response.json();
-      } catch {
-        payload = null;
-      }
-      throw new Error(extractError(payload, `请求失败 (${response.status})`));
-    }
-    if (response.status === 204) return undefined as T;
-    return (await response.json()) as T;
+  constructor(private readonly token: string) {
+    this.client = createClient<paths>();
+    const tokenMiddleware: Middleware = {
+      onRequest: ({ request }) => {
+        request.headers.set("X-Bilidown-Token", token);
+        return request;
+      },
+    };
+    this.client.use(tokenMiddleware);
   }
 
-  getStatus(): Promise<AppStatus> {
-    return this.request("/api/status");
+  async getStatus(): Promise<AppStatus> {
+    const { data, error, response } = await this.client.GET("/api/status");
+    return requireData(data, error, response);
   }
 
-  resolve(credential: string, auth: AuthConfig): Promise<ResolvedVideo> {
-    return this.request("/api/resolve", {
-      method: "POST",
-      body: JSON.stringify({ credential, auth }),
+  async resolve(credential: string, auth: AuthConfig): Promise<ResolvedVideo> {
+    const { data, error, response } = await this.client.POST("/api/resolve", {
+      body: { credential, auth },
     });
+    return requireData(data, error, response);
   }
 
-  checkAuth(auth: AuthConfig): Promise<AuthStatus> {
-    return this.request("/api/auth/status", {
-      method: "POST",
-      body: JSON.stringify({ auth }),
+  async checkAuth(auth: AuthConfig): Promise<AuthStatus> {
+    const { data, error, response } = await this.client.POST("/api/auth/status", {
+      body: { auth },
     });
+    return requireData(data, error, response);
   }
 
-  autoSelectAuth(): Promise<AutoAuthResult> {
-    return this.request("/api/auth/auto", { method: "POST" });
+  async autoSelectAuth(): Promise<AutoAuthResult> {
+    const { data, error, response } = await this.client.POST("/api/auth/auto");
+    return requireData(data, error, response);
   }
 
-  async uploadCookies(file: File): Promise<{ session_id: string; cookie_count: number }> {
+  async uploadCookies(file: File): Promise<CookieSessionResult> {
     const body = new FormData();
     body.set("file", file);
-    return this.request("/api/auth/cookie-sessions", { method: "POST", body });
+    const response = await fetch("/api/auth/cookie-sessions", {
+      method: "POST",
+      headers: { "X-Bilidown-Token": this.token },
+      body,
+    });
+    const payload: unknown = await response.json().catch(() => null);
+    if (!response.ok) {
+      throw new Error(extractError(payload, `请求失败 (${response.status})`));
+    }
+    if (
+      !isRecord(payload)
+      || typeof payload.session_id !== "string"
+      || typeof payload.cookie_count !== "number"
+    ) {
+      throw new Error("Cookie 会话响应格式无效");
+    }
+    return {
+      session_id: payload.session_id,
+      cookie_count: payload.cookie_count,
+    };
   }
 
-  deleteCookieSession(sessionId: string): Promise<void> {
-    return this.request(`/api/auth/cookie-sessions/${sessionId}`, { method: "DELETE" });
+  async deleteCookieSession(sessionId: string): Promise<void> {
+    const { error, response } = await this.client.DELETE(
+      "/api/auth/cookie-sessions/{session_id}",
+      { params: { path: { session_id: sessionId } } },
+    );
+    requireSuccess(error, response);
   }
 
-  listJobs(): Promise<JobView[]> {
-    return this.request("/api/jobs");
+  async listJobs(): Promise<JobView[]> {
+    const { data, error, response } = await this.client.GET("/api/jobs");
+    return requireData(data, error, response);
   }
 
-  createJob(request: CreateJobRequest): Promise<JobView> {
-    return this.request("/api/jobs", { method: "POST", body: JSON.stringify(request) });
+  async createJob(request: CreateJobRequest): Promise<JobView> {
+    const { data, error, response } = await this.client.POST("/api/jobs", {
+      body: request,
+    });
+    return requireData(data, error, response);
   }
 
-  cancelJob(jobId: string): Promise<JobView> {
-    return this.request(`/api/jobs/${jobId}/cancel`, { method: "POST" });
+  async cancelJob(jobId: string): Promise<JobView> {
+    const { data, error, response } = await this.client.POST(
+      "/api/jobs/{job_id}/cancel",
+      { params: { path: { job_id: jobId } } },
+    );
+    return requireData(data, error, response);
   }
 
-  retryJob(jobId: string): Promise<JobView> {
-    return this.request(`/api/jobs/${jobId}/retry`, { method: "POST" });
+  async retryJob(jobId: string): Promise<JobView> {
+    const { data, error, response } = await this.client.POST(
+      "/api/jobs/{job_id}/retry",
+      { params: { path: { job_id: jobId } } },
+    );
+    return requireData(data, error, response);
   }
 
-  openOutput(path: string): Promise<void> {
-    return this.request("/api/open-output", { method: "POST", body: JSON.stringify({ path }) });
+  async openOutput(path: string): Promise<void> {
+    const { error, response } = await this.client.POST("/api/open-output", {
+      body: { path },
+    });
+    requireSuccess(error, response);
   }
 
-  quit(): Promise<void> {
-    return this.request("/api/quit", { method: "POST" });
+  async quit(): Promise<void> {
+    const { error, response } = await this.client.POST("/api/quit");
+    requireSuccess(error, response);
   }
 
   async streamJob(jobId: string, onUpdate: (job: JobView) => void): Promise<void> {
-    const response = await fetch(`/api/jobs/${jobId}/events`, {
+    const response = await fetch(`/api/jobs/${encodeURIComponent(jobId)}/events`, {
       headers: { "X-Bilidown-Token": this.token },
     });
     if (!response.ok || !response.body) throw new Error("无法订阅任务进度");
@@ -203,7 +205,7 @@ export class ApiClient {
           .split("\n")
           .find((line) => line.startsWith("data: "))
           ?.slice(6);
-        if (data) onUpdate(JSON.parse(data) as JobView);
+        if (data) onUpdate(parseJobView(JSON.parse(data) as unknown));
       }
       if (done) return;
     }

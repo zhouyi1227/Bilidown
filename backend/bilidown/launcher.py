@@ -6,6 +6,7 @@ import socket
 import threading
 import time
 import webbrowser
+from typing import cast
 
 import uvicorn
 
@@ -15,7 +16,8 @@ from .app import create_app
 def _find_available_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.bind(("127.0.0.1", 0))
-        return int(sock.getsockname()[1])
+        address = cast(tuple[str, int], sock.getsockname())
+        return address[1]
 
 
 def _configured_port() -> int:

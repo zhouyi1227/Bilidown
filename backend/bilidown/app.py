@@ -8,9 +8,8 @@ import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 from collections.abc import Callable
-from typing import AsyncIterator
+from typing import AsyncGenerator
 
-import httpx
 import yt_dlp.version
 from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse, Response, StreamingResponse
@@ -28,6 +27,7 @@ from .models import (
     AuthStatus,
     AuthStatusRequest,
     CreateJobRequest,
+    CookieSessionResult,
     JobStatus,
     JobView,
     OpenOutputRequest,
@@ -68,7 +68,7 @@ def create_app(
     jobs = JobManager(engine)
 
     @asynccontextmanager
-    async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
         await jobs.start()
         try:
             yield
@@ -130,8 +130,8 @@ def create_app(
     async def auto_auth() -> AutoAuthResult:
         return await asyncio.to_thread(engine.auto_auth)
 
-    @app.post("/api/auth/cookie-sessions")
-    async def create_cookie_session(file: UploadFile = File(...)) -> dict[str, object]:
+    @app.post("/api/auth/cookie-sessions", response_model=CookieSessionResult)
+    async def create_cookie_session(file: UploadFile = File(...)) -> CookieSessionResult:
         payload = await file.read(1024 * 1024 + 1)
         if len(payload) > 1024 * 1024:
             raise HTTPException(status_code=413, detail="Cookie 文件不能超过 1 MiB")
@@ -140,7 +140,10 @@ def create_app(
             session = cookies.create(content)
         except (UnicodeDecodeError, InvalidCookieFile) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
-        return {"session_id": session.id, "cookie_count": session.cookie_count}
+        return CookieSessionResult(
+            session_id=session.id,
+            cookie_count=session.cookie_count,
+        )
 
     @app.delete(
         "/api/auth/cookie-sessions/{session_id}",
@@ -197,7 +200,7 @@ def create_app(
         except KeyError as exc:
             raise HTTPException(status_code=404, detail="任务不存在") from exc
 
-        async def stream() -> AsyncIterator[str]:
+        async def stream() -> AsyncGenerator[str]:
             version = -1
             while True:
                 try:

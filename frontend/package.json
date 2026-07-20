@@ -6,11 +6,14 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc -b && vite build",
+    "schema:generate": "node ../packaging/generate-openapi.mjs && openapi-typescript openapi.json -o src/generated/api-schema.ts",
+    "schema:check": "pnpm schema:generate && git diff --exit-code -- openapi.json src/generated/api-schema.ts",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
+    "openapi-fetch": "0.17.0",
     "react": "19.2.7",
     "react-dom": "19.2.7"
   },
@@ -21,9 +24,11 @@
     "@testing-library/user-event": "14.6.1",
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
+    "@types/node": "24.13.3",
     "@vitejs/plugin-react": "6.0.3",
     "jsdom": "29.1.1",
-    "typescript": "7.0.2",
+    "openapi-typescript": "7.13.0",
+    "typescript": "5.9.3",
     "vite": "8.1.4",
     "vitest": "4.1.10"
   }

@@ -44,9 +44,9 @@ export function AuthPanel({
   }
 
   const sourceLabel = auth.kind === "guest"
-    ? "游客"
-    : auth.kind === "browser"
-      ? auth.browser[0].toUpperCase() + auth.browser.slice(1)
+      ? "游客"
+      : auth.kind === "browser"
+      ? auth.browser.charAt(0).toUpperCase() + auth.browser.slice(1)
       : "cookies.txt";
   const statusTone = checking
     ? "checking"
@@ -94,7 +94,7 @@ export function AuthPanel({
             disabled={disabled}
             key={browser}
           >
-            {browser[0].toUpperCase() + browser.slice(1)}
+            {browser.charAt(0).toUpperCase() + browser.slice(1)}
           </button>
         ))}
       </div>
@@ -105,7 +105,11 @@ export function AuthPanel({
           <input
             value={auth.profile ?? ""}
             onChange={(event) =>
-              onChange({ kind: "browser", browser: auth.browser, profile: event.target.value || undefined })
+              onChange(
+                event.target.value
+                  ? { kind: "browser", browser: auth.browser, profile: event.target.value }
+                  : { kind: "browser", browser: auth.browser },
+              )
             }
             placeholder="留空使用最近访问的 Profile"
             disabled={disabled}

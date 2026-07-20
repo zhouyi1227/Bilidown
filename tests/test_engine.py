@@ -187,7 +187,7 @@ def test_auth_status_reports_nickname_and_membership(monkeypatch: pytest.MonkeyP
             "vip_label": {"text": "年度大会员"},
         },
     }
-    monkeypatch.setattr("bilidown.engine.yt_dlp.YoutubeDL", fake_ydl(payload))
+    monkeypatch.setattr("bilidown.yt_adapter.yt_dlp.YoutubeDL", fake_ydl(payload))
 
     status = DownloaderEngine(CookieStore()).auth_status(BrowserAuth(browser="firefox"))
 
@@ -241,7 +241,7 @@ def test_auth_status_maps_browser_cookie_decryption_failure(monkeypatch: pytest.
         def __init__(self, _: dict[str, object]) -> None:
             raise DownloadError("Failed to decrypt browser cookies with DPAPI")
 
-    monkeypatch.setattr("bilidown.engine.yt_dlp.YoutubeDL", FailingYoutubeDL)
+    monkeypatch.setattr("bilidown.yt_adapter.yt_dlp.YoutubeDL", FailingYoutubeDL)
 
     with pytest.raises(EngineError) as exc_info:
         DownloaderEngine(CookieStore()).auth_status(BrowserAuth(browser="chrome"))
@@ -290,7 +290,7 @@ def test_download_page_uses_exact_format_variant(
         def download(self, _: list[str]) -> None:
             return None
 
-    monkeypatch.setattr("bilidown.engine.yt_dlp.YoutubeDL", CapturingYoutubeDL)
+    monkeypatch.setattr("bilidown.yt_adapter.yt_dlp.YoutubeDL", CapturingYoutubeDL)
     page = VideoPage(index=1, cid=1, title="第一部分", duration=10, qualities=[option])
     resolved = ResolvedVideo(
         canonical_url="https://www.bilibili.com/video/BV1xx411c7mD",
@@ -364,7 +364,7 @@ def test_resolve_uses_base_video_url_to_return_all_pages(monkeypatch: pytest.Mon
         def sanitize_info(self, info: dict[str, object]) -> dict[str, object]:
             return info
 
-    monkeypatch.setattr("bilidown.engine.yt_dlp.YoutubeDL", FakeYoutubeDL)
+    monkeypatch.setattr("bilidown.yt_adapter.yt_dlp.YoutubeDL", FakeYoutubeDL)
 
     resolved = DownloaderEngine(CookieStore()).resolve(
         NormalizedCredential(

@@ -7,7 +7,7 @@ import tempfile
 import threading
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterator
+from typing import Generator
 
 from .models import AuthConfig, BrowserAuth, CookieSessionAuth
 
@@ -85,7 +85,7 @@ class CookieStore:
             self._sessions.clear()
 
     @contextlib.contextmanager
-    def yt_dlp_options(self, auth: AuthConfig) -> Iterator[dict[str, object]]:
+    def yt_dlp_options(self, auth: AuthConfig) -> Generator[dict[str, object]]:
         if isinstance(auth, BrowserAuth):
             yield {"cookiesfrombrowser": (auth.browser, auth.profile, None, None)}
             return
@@ -105,4 +105,3 @@ class CookieStore:
         finally:
             with contextlib.suppress(OSError):
                 path.unlink()
-

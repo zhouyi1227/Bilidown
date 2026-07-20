@@ -4,12 +4,13 @@ import hmac
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from starlette.types import ASGIApp
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.responses import Response
 
 
 class LocalSecurityMiddleware(BaseHTTPMiddleware):
-    def __init__(self, app: object, *, token: str, expected_origin: str) -> None:
+    def __init__(self, app: ASGIApp, *, token: str, expected_origin: str) -> None:
         super().__init__(app)
         self.token = token
         self.expected_origin = expected_origin.rstrip("/")

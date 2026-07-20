@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from typing import cast
 from urllib.parse import parse_qs, urljoin, urlsplit, urlunsplit
 
 import httpx
@@ -81,7 +82,7 @@ async def _resolve_short_url(url: str, client: httpx.AsyncClient) -> str:
         try:
             if response.status_code not in {301, 302, 303, 307, 308}:
                 raise InvalidCredential("b23.tv 未返回有效的视频跳转")
-            location = response.headers.get("location")
+            location = cast(str | None, response.headers.get("location"))
             if not location or len(location) > 4096:
                 raise InvalidCredential("短链跳转地址无效")
             current = urljoin(current, location)

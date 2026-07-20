@@ -19,6 +19,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+  "basedpyright==1.39.9",
   "pyinstaller==6.14.2",
   "pytest==8.4.1",
   "pytest-asyncio==1.0.0",
@@ -37,3 +38,12 @@ where = ["backend"]
 addopts = "-q"
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+[tool.basedpyright]
+include = ["backend/bilidown"]
+pythonVersion = "3.12"
+typeCheckingMode = "strict"
+reportAny = "error"
+reportExplicitAny = "error"
+reportIgnoreCommentWithoutRule = "error"
+reportUnusedFunction = "none"

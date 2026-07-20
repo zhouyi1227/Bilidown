@@ -27,7 +27,6 @@ describe("VideoPreview", () => {
     expect(screen.getByText("测试视频")).toBeInTheDocument();
     expect(screen.getByText("第一部分")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "选择全部" }));
-    expect([...onChange.mock.calls[0][0]]).toEqual([1, 2]);
+    expect(onChange).toHaveBeenCalledWith(new Set([1, 2]));
   });
 });
-
