@@ -29,5 +29,10 @@ src-tauri/icons/*
 !src-tauri/icons/icon.ico
 !src-tauri/icons/icon.png
 .DS_Store
-pnpm-workspace.yaml
-src-tauri/gen/
+._*
+.AppleDouble
+/frontend/pnpm-workspace.yaml
+/frontend/playwright-report/
+/frontend/test-results/
+/.pnpm-store/
+/src-tauri/gen/schemas/

@@ -7,7 +7,9 @@ mod idle;
 
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use tauri::{Manager, RunEvent, WindowEvent};
+#[cfg(target_os = "macos")]
+use tauri::RunEvent;
+use tauri::{Manager, WindowEvent};
 
 pub fn run() {
     let builder = tauri::Builder::default()
@@ -47,8 +49,7 @@ pub fn run() {
             idle::set_idle_timeout,
         ])
         .build(tauri::generate_context!());
-    let app = match builder
-    {
+    let app = match builder {
         Ok(app) => app,
         Err(error) => {
             eprintln!("Bilidown desktop runtime failed: {error}");
@@ -56,11 +57,12 @@ pub fn run() {
         }
     };
 
-    app.run(|app_handle, event| {
-        if let RunEvent::Reopen { has_visible_windows, .. } = event
-            && !has_visible_windows
+    app.run(|_app_handle, _event| {
+        #[cfg(target_os = "macos")]
         {
-            desktop::show_main_window(app_handle);
+            if let RunEvent::Reopen { .. } = _event {
+                desktop::show_main_window(_app_handle);
+            }
         }
     });
 }
