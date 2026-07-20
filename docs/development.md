@@ -50,6 +50,7 @@ uv pip install -e ".[dev]"
 pnpm --dir frontend install --frozen-lockfile
 pnpm --dir frontend build
 .venv/bin/python -m bilidown.launcher
+```
 
 ## 前后端开发模式
 

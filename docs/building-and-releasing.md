@@ -36,7 +36,7 @@ FFmpeg 8.1.2 与 LAME 3.100 从固定源码和校验和构建，目标最低 mac
 
 ## GitHub Actions
 
-`CI` 在 PR 和 main/master 推送上运行 pytest、严格 Python/TypeScript/Rust 检查、Vitest、Vite 与 Playwright。`Desktop builds` 可手动触发并在 Windows/macOS 构建原生安装包。
+`CI` 在 PR 和 main/master 推送上运行 pytest、严格 Python/TypeScript/Rust 检查、Vitest、Vite 与 Playwright。稳定 macOS 检查和正式产物使用 `macos-26` ARM64 runner；非阻塞的 `xcode-27` 任务用于提前发现新 SDK 的编译问题，但它仍运行 macOS 26，不能替代 macOS 27 真机测试。`Desktop builds` 可手动触发并在 Windows/macOS 构建原生安装包。
 
 推送与项目版本完全一致的 `vX.Y.Z` 标签创建正式 Release；`vX.Y.Z-rc.N` 仅在项目版本本身也是该预发布版本时创建 prerelease。Release 包含 Windows x64 NSIS/MSI/便携 ZIP、macOS arm64 DMG、第三方源码包和 `SHA256SUMS.txt`。
 
@@ -54,4 +54,4 @@ FFmpeg 8.1.2 与 LAME 3.100 从固定源码和校验和构建，目标最低 mac
 
 ## 发布前验收
 
-确认 CI 全绿、Windows NSIS/MSI/便携 ZIP 与 macOS DMG 都已生成、sidecar 能随桌面壳启动、便携 ZIP 解压后主程序与 sidecar 同级、macOS 架构和最低版本正确、签名状态符合预期、许可证与源码归档齐全。真实 Bilibili/4K 测试在本机执行，不作为 Release 阻塞型 CI。
+确认 CI 必需任务全绿、Windows NSIS/MSI/便携 ZIP 与 macOS DMG 都已生成、sidecar 与完整 `.app` 冒烟测试通过、便携 ZIP 解压后主程序与 sidecar 同级、macOS 架构和最低版本正确、签名状态符合预期、许可证与源码归档齐全。真实 Bilibili/4K 测试和 macOS 27 运行时测试在真机执行，不作为 Release 阻塞型 CI。

@@ -104,7 +104,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - runner: macos-15
+          - runner: macos-26
             arch: arm64
     runs-on: ${{ matrix.runner }}
     env:
@@ -177,9 +177,12 @@ jobs:
           app="src-tauri/target/release/bundle/macos/Bilidown.app"
           dmg="$(find src-tauri/target/release/bundle/dmg -name '*.dmg' -print -quit)"
           test -n "$dmg"
-          executable="$(find "$app/Contents/MacOS" -maxdepth 1 -type f -perm +111 -print -quit)"
-          test -n "$executable"
+          executable="$app/Contents/MacOS/bilidown-desktop"
+          sidecar="$app/Contents/MacOS/bilidown-backend"
+          test -x "$executable"
+          test -x "$sidecar"
           lipo -archs "$executable" | grep -qw "${{ matrix.arch }}"
+          lipo -archs "$sidecar" | grep -qw "${{ matrix.arch }}"
           codesign --verify --deep --strict --verbose=2 "$app"
           otool -L .tools/ffmpeg/bin/ffmpeg
           if [[ "$BILIDOWN_NOTARIZE" == "1" ]]; then
@@ -188,6 +191,57 @@ jobs:
           else
             echo "Ad-hoc signed; not notarized" > "src-tauri/target/release/bundle/SIGNING_STATUS-macos-${{ matrix.arch }}.txt"
           fi
+      - name: Smoke-test packaged macOS processes
+        run: |
+          set -euo pipefail
+          app="src-tauri/target/release/bundle/macos/Bilidown.app"
+          sidecar="$app/Contents/MacOS/bilidown-backend"
+          executable="$app/Contents/MacOS/bilidown-desktop"
+          diagnostic="$HOME/Library/Logs/Bilidown/desktop-startup-error.log"
+          port=39567
+          token="ci-smoke-token"
+          BILIDOWN_PORT="$port" \
+          BILIDOWN_SESSION_TOKEN="$token" \
+          BILIDOWN_NO_BROWSER=1 \
+          BILIDOWN_ADDITIONAL_ORIGINS="http://tauri.localhost" \
+            "$sidecar" &
+          sidecar_pid=$!
+          app_pid=""
+          cleanup() {
+            if [[ -n "$sidecar_pid" ]]; then kill "$sidecar_pid" 2>/dev/null || true; fi
+            if [[ -n "$app_pid" ]]; then kill "$app_pid" 2>/dev/null || true; fi
+            pkill -f "$app/Contents/MacOS/bilidown-backend" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+          ready=0
+          for _ in {1..150}; do
+            if curl --fail --silent \
+              -H 'Origin: http://tauri.localhost' \
+              -H "X-Bilidown-Token: $token" \
+              "http://127.0.0.1:$port/api/status" >/dev/null; then
+              ready=1
+              break
+            fi
+            kill -0 "$sidecar_pid"
+            sleep 0.1
+          done
+          test "$ready" = 1
+          curl --fail --silent -X POST \
+            -H 'Origin: http://tauri.localhost' \
+            -H "X-Bilidown-Token: $token" \
+            "http://127.0.0.1:$port/api/quit" >/dev/null
+          wait "$sidecar_pid"
+          sidecar_pid=""
+
+          rm -f "$diagnostic"
+          "$executable" &
+          app_pid=$!
+          sleep 20
+          kill -0 "$app_pid"
+          test ! -f "$diagnostic"
+          kill -TERM "$app_pid"
+          wait "$app_pid" || true
+          app_pid=""
       - uses: actions/upload-artifact@v4
         with:
           name: Bilidown-macos-${{ matrix.arch }}

@@ -66,14 +66,29 @@ jobs:
 
   desktop:
     strategy:
+      fail-fast: false
       matrix:
-        os: [windows-latest, macos-14]
+        include:
+          - os: windows-latest
+            experimental: false
+          - os: macos-26
+            experimental: false
+          - os: xcode-27
+            experimental: true
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.experimental }}
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
+      - name: Record Apple build environment
+        if: runner.os == 'macOS'
+        run: |
+          sw_vers
+          xcodebuild -version
+          xcrun --sdk macosx --show-sdk-version
+          rustc -vV
       - name: Create sidecar placeholder for compile checks
         shell: bash
         run: |
@@ -88,3 +103,15 @@ jobs:
       - name: Run strict Rust lint
         working-directory: src-tauri
         run: cargo clippy --all-targets -- -D warnings
+      - name: Link against the preview Apple SDK
+        if: matrix.experimental
+        working-directory: src-tauri
+        run: cargo build --all-targets --locked
+      - name: Verify generated files are ignored
+        shell: bash
+        run: |
+          dirty="$(git status --porcelain --untracked-files=all)"
+          if [[ -n "$dirty" ]]; then
+            printf '%s\n' "$dirty"
+            exit 1
+          fi
