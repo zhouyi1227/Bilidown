@@ -1,0 +1,15 @@
+from __future__ import annotations
+
+
+BILIBILI_BROWSER_USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/150.0.0.0 Safari/537.36"
+)
+
+
+def bilibili_browser_headers(referer: str) -> dict[str, str]:
+    return {
+        "Referer": referer,
+        "User-Agent": BILIBILI_BROWSER_USER_AGENT,
+    }

@@ -33,7 +33,7 @@ export function VideoPreview({ video, selectedPages, onSelectedPagesChange }: Vi
   return (
     <section className="panel video-preview" aria-labelledby="video-heading">
       <div className="cover-frame">
-        {video.thumbnail ? <img src={video.thumbnail} alt={t("video.coverAlt", { title: video.title })} /> : <div className="cover-placeholder">NO COVER</div>}
+        {video.thumbnail ? <img src={video.thumbnail} referrerPolicy="no-referrer" alt={t("video.coverAlt", { title: video.title })} /> : <div className="cover-placeholder">NO COVER</div>}
       </div>
       <div className="video-details">
         <p className="eyebrow">{t("video.resolved")} · {video.bvid}</p>

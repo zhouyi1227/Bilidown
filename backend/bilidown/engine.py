@@ -12,6 +12,7 @@ from yt_dlp.utils import DownloadError
 from .cookies import CookieStore, InvalidCookieFile
 from .download_result import DownloadOutcome
 from .errors import EngineError, map_engine_error
+from .http_headers import bilibili_browser_headers
 from .input_parser import NormalizedCredential
 from .media_download import MediaDownloadService
 from .media_metadata import (
@@ -114,13 +115,9 @@ class DownloaderEngine:
                     **self.base_options(logger),
                     **cookie_options,
                     "skip_download": True,
-                    "http_headers": {
-                        "Referer": "https://www.bilibili.com/",
-                        "User-Agent": (
-                            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                            "AppleWebKit/537.36 Chrome/138.0.0.0 Safari/537.36"
-                        ),
-                    },
+                    "http_headers": bilibili_browser_headers(
+                        "https://www.bilibili.com/"
+                    ),
                 }
                 payload = self._adapter.open_bytes(
                     "https://api.bilibili.com/x/web-interface/nav",

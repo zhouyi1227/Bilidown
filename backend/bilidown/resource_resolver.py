@@ -10,6 +10,7 @@ from yt_dlp.utils import DownloadError
 from .cookies import CookieStore, InvalidCookieFile
 from .errors import EngineError, map_engine_error
 from .input_parser import NormalizedCredential
+from .live_metadata import enrich_live_uploader
 from .media_metadata import resolved_video_from_info, safe_cover_preview_url
 from .models import AuthConfig, ResolvedResource, ResourceItem, ResourceKind
 from .typeguards import as_bool, as_float, as_int, as_mapping, as_mappings, as_optional_str
@@ -20,6 +21,11 @@ from .yt_logging import EngineLogger
 BaseOptionsFactory = Callable[[EngineLogger], dict[str, object]]
 _BVID_RE = re.compile(r"BV[0-9A-Za-z]{10}", re.IGNORECASE)
 _PREVIEW_LIMIT = 100
+_FULL_METADATA_KINDS = {
+    ResourceKind.VIDEO,
+    ResourceKind.BANGUMI,
+    ResourceKind.FAVORITES,
+}
 
 
 class ResourceResolver:
@@ -54,21 +60,44 @@ class ResourceResolver:
                         "Bilibili 返回了无法识别的资源信息",
                     )
                 kind = _resource_kind(canonical_url, info)
-                if kind == ResourceKind.VIDEO:
+                if kind in _FULL_METADATA_KINDS:
                     full_options: dict[str, object] = {
                         **self._base_options(logger),
                         **cookie_options,
                         "skip_download": True,
                         "noplaylist": False,
                     }
-                    raw_info = self._adapter.extract(canonical_url, full_options)
+                    if kind in {ResourceKind.BANGUMI, ResourceKind.FAVORITES}:
+                        full_options["playlistend"] = _PREVIEW_LIMIT + 1
+                        full_options["lazy_playlist"] = False
+                    raw_info = self._adapter.extract(
+                        _full_metadata_url(canonical_url, info, kind),
+                        full_options,
+                    )
                     full_info = as_mapping(raw_info)
                     if full_info is None:
                         raise EngineError(
                             "invalid_metadata",
                             "Bilibili 返回了无法识别的媒体信息",
                         )
+                    preview_count = as_int(info.get("playlist_count"))
+                    if (
+                        preview_count is not None
+                        and as_int(full_info.get("playlist_count")) is None
+                    ):
+                        full_info["playlist_count"] = preview_count
                     info = full_info
+                elif kind == ResourceKind.LIVE:
+                    info = enrich_live_uploader(
+                        self._adapter,
+                        canonical_url,
+                        info,
+                        {
+                            **self._base_options(logger),
+                            **cookie_options,
+                            "skip_download": True,
+                        },
+                    )
         except InvalidCookieFile:
             raise
         except CookieLoadError as exc:
@@ -132,8 +161,10 @@ class ResourceResolver:
             kind=kind,
             title=title,
             uploader=as_optional_str(info.get("uploader"))
-            or as_optional_str(info.get("channel")),
-            thumbnail=safe_cover_preview_url(info.get("thumbnail")),
+            or as_optional_str(info.get("channel"))
+            or items[0].uploader,
+            thumbnail=safe_cover_preview_url(info.get("thumbnail"))
+            or items[0].thumbnail,
             items=items,
             total_items=total_items,
             truncated=truncated,
@@ -141,6 +172,19 @@ class ResourceResolver:
             warnings=warnings,
             video=video,
         )
+
+
+def _full_metadata_url(
+    canonical_url: str,
+    info: dict[str, object],
+    kind: ResourceKind,
+) -> str:
+    if kind != ResourceKind.BANGUMI:
+        return canonical_url
+    season_id = as_int(info.get("season_id"))
+    if season_id is None or season_id <= 0:
+        return canonical_url
+    return f"https://www.bilibili.com/bangumi/play/ss{season_id}"
 
 
 def _resource_item(

@@ -1,6 +1,6 @@
 # Supported Bilibili media
 
-With the pinned `yt-dlp 2026.7.4`, Bilidown covers regular videos and parts, festival pages, interactive graph nodes, bangumi, courses, favorites, collections, series, playlists, watch later, creator-space video/audio, audio albums, dynamic/opus posts, embeds, live rooms, and BiliIntl videos/series. Category and search extractors are experimental.
+With the pinned `yt-dlp 2026.7.4`, Bilidown covers regular videos and parts, festival pages, interactive graph nodes, bangumi, courses, favorites, collections, series, playlists, watch later, creator-space video/audio, audio albums, dynamic/opus posts, embeds, live rooms, and BiliIntl videos/series. A bangumi episode URL expands to its season with episode titles, durations, and covers. Favorites resolve complete metadata for the first 100 entries. Live previews supplement yt-dlp metadata with the anchor name when Bilibili's room APIs are available. Category and search extractors are experimental.
 
 Subtitles are downloaded separately from the `danmaku` track. Danmaku can be archived as Bilibili XML or converted locally to ASS. The ASS converter supports scrolling, top, bottom, basic color, and font size; advanced positioned/script comments are simplified.
 

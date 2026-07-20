@@ -11,10 +11,11 @@ class FakeAdapter:
         self.result = result
         self.options: Mapping[str, object] = {}
         self.calls: list[Mapping[str, object]] = []
+        self.urls: list[str] = []
 
     def extract(
         self,
-        _: str,
+        url: str,
         options: Mapping[str, object],
         *,
         download: bool = False,
@@ -22,6 +23,7 @@ class FakeAdapter:
         assert download is False
         self.options = options
         self.calls.append(options)
+        self.urls.append(url)
         return self.result
 
     def download(
@@ -33,7 +35,7 @@ class FakeAdapter:
 
     def open_bytes(
         self,
-        _: str,
+        url: str,
         __: Mapping[str, object],
         *,
         limit: int,
@@ -53,7 +55,7 @@ class SequencedFakeAdapter(FakeAdapter):
 
     def extract(
         self,
-        _: str,
+        url: str,
         options: Mapping[str, object],
         *,
         download: bool = False,
@@ -61,6 +63,7 @@ class SequencedFakeAdapter(FakeAdapter):
         assert download is False
         self.options = options
         self.calls.append(options)
+        self.urls.append(url)
         return self.results[len(self.calls) - 1]
 
 
@@ -153,22 +156,117 @@ def test_resolves_single_video_and_drops_untrusted_cover() -> None:
     assert len(adapter.calls) == 2
 
 
+def test_expands_bangumi_episode_to_full_season_metadata() -> None:
+    adapter = SequencedFakeAdapter(
+        [
+            {
+                "extractor_key": "BiliBiliBangumi",
+                "id": "329016",
+                "title": "第 1 集",
+                "season_id": "4349",
+            },
+            {
+                "extractor_key": "BiliBiliBangumiSeason",
+                "id": "4349",
+                "title": "中二病也要谈恋爱！恋",
+                "entries": [
+                    {
+                        "id": "329016",
+                        "title": "01 复活之…邪王真眼",
+                        "duration": 1416.5,
+                        "thumbnail": "https://i0.hdslb.com/episode-1.jpg",
+                        "webpage_url": (
+                            "https://www.bilibili.com/bangumi/play/ep329016"
+                        ),
+                    },
+                    {
+                        "id": "329017",
+                        "title": "02 海豚之…恋人契约",
+                        "duration": 1416.4,
+                        "thumbnail": "https://i0.hdslb.com/episode-2.jpg",
+                        "webpage_url": (
+                            "https://www.bilibili.com/bangumi/play/ep329017"
+                        ),
+                    },
+                ],
+            },
+        ]
+    )
+    resolver = ResourceResolver(CookieStore(), adapter, base_options)  # type: ignore[arg-type]
+
+    resource = resolver.resolve(
+        "https://www.bilibili.com/bangumi/play/ep329016",
+        GuestAuth(),
+    )
+
+    assert resource.kind == ResourceKind.BANGUMI
+    assert resource.title == "中二病也要谈恋爱！恋"
+    assert [item.title for item in resource.items] == [
+        "01 复活之…邪王真眼",
+        "02 海豚之…恋人契约",
+    ]
+    assert [item.duration for item in resource.items] == [1416.5, 1416.4]
+    assert resource.thumbnail == "https://i0.hdslb.com/episode-1.jpg"
+    assert adapter.urls[1] == "https://www.bilibili.com/bangumi/play/ss4349"
+    assert adapter.calls[1]["playlistend"] == 101
+    assert "extract_flat" not in adapter.calls[1]
+
+
+def test_keeps_episode_url_when_season_id_is_invalid() -> None:
+    episode_url = "https://www.bilibili.com/bangumi/play/ep329016"
+    adapter = SequencedFakeAdapter(
+        [
+            {
+                "extractor_key": "BiliBiliBangumi",
+                "id": "329016",
+                "title": "第 1 集",
+                "season_id": "not-a-number",
+            },
+            {
+                "extractor_key": "BiliBiliBangumi",
+                "id": "329016",
+                "title": "第 1 集",
+                "duration": 1416.5,
+            },
+        ]
+    )
+    resolver = ResourceResolver(CookieStore(), adapter, base_options)  # type: ignore[arg-type]
+
+    resource = resolver.resolve(episode_url, GuestAuth())
+
+    assert resource.kind == ResourceKind.BANGUMI
+    assert resource.items[0].title == "第 1 集"
+    assert adapter.urls == [episode_url, episode_url]
+
+
 def test_resolves_favorites_as_bounded_preview() -> None:
-    entries = [
+    full_entries = [
         {
             "id": f"BV00000000{index:02d}",
             "title": f"视频 {index}",
-            "url": f"https://www.bilibili.com/video/BV00000000{index:02d}",
+            "duration": float(index),
+            "thumbnail": f"https://i0.hdslb.com/cover-{index}.jpg",
+            "webpage_url": (
+                f"https://www.bilibili.com/video/BV00000000{index:02d}"
+            ),
         }
         for index in range(1, 102)
     ]
-    adapter = FakeAdapter(
-        {
-            "extractor_key": "BilibiliFavoritesList",
-            "title": "收藏夹",
-            "playlist_count": 150,
-            "entries": entries,
-        }
+    adapter = SequencedFakeAdapter(
+        [
+            {
+                "extractor_key": "BilibiliFavoritesList",
+                "title": "收藏夹",
+                "playlist_count": 150,
+                "entries": [{"_type": "url"} for _ in range(101)],
+            },
+            {
+                "extractor_key": "BilibiliFavoritesList",
+                "title": "收藏夹",
+                "playlist_count": 150,
+                "entries": full_entries,
+            },
+        ]
     )
     resolver = ResourceResolver(CookieStore(), adapter, base_options)  # type: ignore[arg-type]
 
@@ -181,8 +279,12 @@ def test_resolves_favorites_as_bounded_preview() -> None:
     assert len(resource.items) == 100
     assert resource.total_items == 150
     assert resource.truncated is True
+    assert resource.items[0].title == "视频 1"
+    assert resource.items[99].duration == 100.0
+    assert resource.items[0].thumbnail == "https://i0.hdslb.com/cover-1.jpg"
     assert adapter.options["playlistend"] == 101
-    assert len(adapter.calls) == 1
+    assert "extract_flat" not in adapter.options
+    assert len(adapter.calls) == 2
 
 
 def test_marks_interactive_nodes_and_documents_limitation() -> None:

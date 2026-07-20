@@ -53,6 +53,7 @@ export function ResourcePreview({
           <img
             className="resource-thumbnail"
             src={resource.thumbnail}
+            referrerPolicy="no-referrer"
             alt={t("video.coverAlt", { title: resource.title })}
           />
         )}

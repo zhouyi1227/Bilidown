@@ -8,16 +8,16 @@
 | --- | --- | --- |
 | 普通投稿、分 P、活动页 | `BiliBili` | 精确格式选择；封面/音视频/字幕/弹幕 |
 | 互动视频 | `BiliBili` interactive graph | 枚举唯一分支节点，可选择下载 |
-| 番剧/影视 | `BiliBiliBangumi*` | 季/媒体/单集预览与批量 |
+| 番剧/影视 | `BiliBiliBangumi*` | 单集链接自动展开所属季度，显示剧集名称、时长和封面 |
 | 课程 | `BilibiliCheese*` | 季/单课，通常需要购买账号登录 |
-| 收藏夹 | `BilibiliFavoritesList` | 预览选择、逐项继续失败 |
+| 收藏夹 | `BilibiliFavoritesList` | 前 100 项完整元数据预览、选择下载、逐项继续失败 |
 | 合集/系列/播放列表 | `BilibiliCollectionList`、`BilibiliSeriesList`、`BilibiliPlaylist` | 预览选择与批量 |
 | 稍后再看 | `BilibiliWatchlater` | 需要登录 |
 | UP 主空间投稿/音频 | `BilibiliSpaceVideo`、`BilibiliSpaceAudio` | 批量预览与下载 |
 | 音频/歌单 | `BilibiliAudio`、`BilibiliAudioAlbum` | 音频下载 |
 | 动态/opus | `BiliBiliDynamic` | 下载动态中可提取媒体 |
 | 播放器嵌入 | `BiliBiliPlayer` | 解析嵌入视频 |
-| 直播 | `BiliLive` | 独立录制器；停止保留或取消删除 |
+| 直播 | `BiliLive` + 直播房间元数据 | 显示主播和封面；独立录制器；停止保留或取消删除 |
 | BiliIntl | `BiliIntl`、`biliIntl:series` | 视频/剧集，受地区和账号限制 |
 | 分区/搜索 | `Bilibili category`、`BilibiliSearch` | 实验性；接口变动风险较高 |
 
